@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}itired 🎵 - Главная{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="dashboard-header animate-fade-in">
+        <h1>Добро пожаловать в itired! 🎵</h1>
+        <p>Ваш персональный музыкальный сервис</p>
+    </div>
+    
+    <div class="dashboard-stats grid grid-4 animate-fade-in" style="animation-delay: 0.1s">
+        <div class="stat-card hover-lift">
+            <div class="stat-icon">
+                <i class="fas fa-headphones"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="tracks-listened">0</h3>
+                <p>Треков прослушано</p>
+            </div>
+        </div>
+        
+        <div class="stat-card hover-lift">
+            <div class="stat-icon">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="minutes-listened">0</h3>
+                <p>Минут музыки</p>
+            </div>
+        </div>
+        
+        <div class="stat-card hover-lift">
+            <div class="stat-icon">
+                <i class="fas fa-coins"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="dashboard-balance">0</h3>
+                <p>Монет в кошельке</p>
+            </div>
+        </div>
+        
+        <div class="stat-card hover-lift">
+            <div class="stat-icon">
+                <i class="fas fa-trophy"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="daily-streak">0</h3>
+                <p>Дней подряд</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="dashboard-content grid grid-2 gap-4">
+        <div class="card hover-lift animate-fade-in" style="animation-delay: 0.2s">
+            <div class="card-header">
+                <h2 class="card-title">Рекомендации</h2>
+                <button class="btn btn-sm btn-outline" id="refresh-recommendations">
+                    <i class="fas fa-redo"></i>
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="recommendations-list" class="recommendations-list">
+                    <!-- Recommendations will be loaded here -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="card hover-lift animate-fade-in" style="animation-delay: 0.3s">
+            <div class="card-header">
+                <h2 class="card-title">Недавние треки</h2>
+            </div>
+            <div class="card-body">
+                <div id="recent-tracks" class="tracks-list">
+                    <!-- Recent tracks will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mt-4 hover-lift animate-fade-in" style="animation-delay: 0.4s">
+        <div class="card-header">
+            <h2 class="card-title">Быстрый доступ</h2>
+        </div>
+        <div class="card-body">
+            <div class="quick-actions grid grid-4">
+                <a href="#shop" class="quick-action hover-scale">
+                    <div class="action-icon">
+                        <i class="fas fa-store"></i>
+                    </div>
+                    <span>Магазин</span>
+                </a>
+                
+                <a href="#music" class="quick-action hover-scale">
+                    <div class="action-icon">
+                        <i class="fas fa-headphones"></i>
+                    </div>
+                    <span>Моя музыка</span>
+                </a>
+                
+                <a href="#friends" class="quick-action hover-scale">
+                    <div class="action-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <span>Друзья</span>
+                </a>
+                
+                <a href="#settings" class="quick-action hover-scale">
+                    <div class="action-icon">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                    <span>Настройки</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize dashboard when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        App.loadDashboardStats();
+        App.loadRecommendations();
+        App.loadRecentTracks();
+        
+        // Add event listeners
+        document.getElementById('refresh-recommendations')?.addEventListener('click', function() {
+            App.loadRecommendations();
+            this.querySelector('i').classList.add('fa-spin');
+            setTimeout(() => {
+                this.querySelector('i').classList.remove('fa-spin');
+            }, 1000);
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}itired 🎵 - Музыкальный сервис{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/static/assets/icons/logo.svg">
+    <link rel="apple-touch-icon" href="/static/assets/icons/apple-touch-icon.png">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="/static/css/animations.css">
+    <link rel="stylesheet" href="/static/css/responsive.css">
+    
+    {% block extra_css %}{% endblock %}
+    
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #141414;
+            --bg-tertiary: #1f1f1f;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --text-muted: #888888;
+            --accent-primary: #ff6b6b;
+            --accent-secondary: #4dabf7;
+            --success: #51cf66;
+            --warning: #ff922b;
+            --danger: #ff6b6b;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --sidebar-width: 280px;
+            --player-height: 90px;
+            --border-radius: 12px;
+            --border-radius-sm: 8px;
+            --transition-fast: 0.2s ease;
+            --transition-normal: 0.3s ease;
+            --transition-slow: 0.5s ease;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+    </style>
+</head>
+<body>
+    <!-- Preloader -->
+    <div id="preloader" class="preloader">
+        <div class="preloader-content">
+            <div class="logo-loader">
+                <i class="fas fa-music"></i>
+                <span>itired</span>
+            </div>
+            <div class="loading-bar">
+                <div class="loading-progress"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Background Effects -->
+    <div class="bg-effects">
+        <div class="particles-container" id="particles-js"></div>
+        <div class="gradient-blob blob-1"></div>
+        <div class="gradient-blob blob-2"></div>
+        <div class="gradient-blob blob-3"></div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="app-container">
+        {% if session.user_id %}
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-music"></i>
+                    <span>itired</span>
+                </div>
+                <button class="sidebar-toggle" id="sidebar-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+
+            <div class="sidebar-content">
+                <!-- User Profile Card -->
+                <div class="user-card">
+                    <div class="user-avatar" id="user-avatar">
+                        <img src="" alt="Avatar" id="avatar-img">
+                        <div class="online-status active"></div>
+                    </div>
+                    <div class="user-info">
+                        <h3 id="username">Загрузка...</h3>
+                        <p id="user-email">Загрузка...</p>
+                        <div class="currency-badge">
+                            <i class="fas fa-coins"></i>
+                            <span id="user-balance">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation -->
+                <nav class="sidebar-nav">
+                    <ul>
+                        <li>
+                            <a href="/" class="nav-item active" data-page="dashboard">
+                                <i class="fas fa-home"></i>
+                                <span>Главная</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#profile" class="nav-item" data-page="profile">
+                                <i class="fas fa-user"></i>
+                                <span>Профиль</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#music" class="nav-item" data-page="music">
+                                <i class="fas fa-headphones"></i>
+                                <span>Музыка</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#shop" class="nav-item" data-page="shop">
+                                <i class="fas fa-store"></i>
+                                <span>Магазин</span>
+                                <span class="nav-badge" id="shop-badge">NEW</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#inventory" class="nav-item" data-page="inventory">
+                                <i class="fas fa-box-open"></i>
+                                <span>Инвентарь</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#friends" class="nav-item" data-page="friends">
+                                <i class="fas fa-users"></i>
+                                <span>Друзья</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#settings" class="nav-item" data-page="settings">
+                                <i class="fas fa-cog"></i>
+                                <span>Настройки</span>
+                            </a>
+                        </li>
+                        {% if session.is_admin %}
+                        <li class="nav-divider"></li>
+                        <li>
+                            <a href="/admin" class="nav-item" data-page="admin">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>Админ-панель</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+
+                <!-- Daily Reward -->
+                <div class="daily-reward-card">
+                    <div class="reward-header">
+                        <i class="fas fa-gift"></i>
+                        <h4>Ежедневная награда</h4>
+                    </div>
+                    <p>Получите бонусные монеты каждый день</p>
+                    <button class="btn btn-primary btn-sm" id="daily-reward-btn">
+                        <i class="fas fa-coins"></i>
+                        Получить награду
+                    </button>
+                    <div class="reward-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="reward-progress"></div>
+                        </div>
+                        <span id="reward-streak">День 1</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <a href="/logout" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Выйти</span>
+                </a>
+            </div>
+        </aside>
+        {% endif %}
+
+        <!-- Main Content -->
+        <main class="main-content" id="main-content">
+            <!-- Header -->
+            {% if session.user_id %}
+            <header class="main-header">
+                <div class="header-left">
+                    <button class="menu-toggle" id="menu-toggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="global-search" placeholder="Поиск музыки, плейлистов...">
+                        <div class="search-results" id="search-results"></div>
+                    </div>
+                </div>
+                
+                <div class="header-right">
+                    <div class="notifications">
+                        <button class="notification-btn" id="notification-btn">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-count" id="notification-count">0</span>
+                        </button>
+                        <div class="notification-dropdown" id="notification-dropdown"></div>
+                    </div>
+                    
+                    <button class="theme-toggle" id="theme-toggle">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    
+                    <div class="user-dropdown">
+                        <button class="user-menu-btn" id="user-menu-btn">
+                            <img src="" alt="Avatar" id="header-avatar">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="user-dropdown-menu" id="user-dropdown-menu">
+                            <a href="#profile" class="dropdown-item">
+                                <i class="fas fa-user"></i> Мой профиль
+                            </a>
+                            <a href="#settings" class="dropdown-item">
+                                <i class="fas fa-cog"></i> Настройки
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a href="/logout" class="dropdown-item logout">
+                                <i class="fas fa-sign-out-alt"></i> Выйти
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            {% endif %}
+
+            <!-- Content Area -->
+            <div class="content-wrapper">
+                <!-- Page Content -->
+                <div class="page-content" id="page-content">
+                    {% block content %}{% endblock %}
+                </div>
+            </div>
+
+            <!-- Music Player -->
+            {% if session.user_id %}
+            <div class="music-player" id="music-player">
+                <div class="player-left">
+                    <div class="track-info">
+                        <div class="track-cover" id="track-cover">
+                            <img src="" alt="Cover">
+                        </div>
+                        <div class="track-details">
+                            <h4 class="track-title" id="track-title">Не играет</h4>
+                            <p class="track-artist" id="track-artist">Выберите трек</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="player-center">
+                    <div class="player-controls">
+                        <button class="control-btn" id="prev-btn">
+                            <i class="fas fa-step-backward"></i>
+                        </button>
+                        <button class="control-btn play-btn" id="play-btn">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button class="control-btn" id="next-btn">
+                            <i class="fas fa-step-forward"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="player-progress">
+                        <span class="time-current" id="time-current">0:00</span>
+                        <div class="progress-bar" id="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        <span class="time-total" id="time-total">0:00</span>
+                    </div>
+                </div>
+                
+                <div class="player-right">
+                    <button class="player-btn" id="repeat-btn">
+                        <i class="fas fa-redo"></i>
+                    </button>
+                    <button class="player-btn" id="shuffle-btn">
+                        <i class="fas fa-random"></i>
+                    </button>
+                    <div class="volume-control">
+                        <i class="fas fa-volume-up" id="volume-icon"></i>
+                        <input type="range" id="volume-slider" min="0" max="100" value="80">
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="modal-overlay"></div>
+    
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/player.js"></script>
+    <script src="/static/js/shop.js"></script>
+    
+    {% block extra_js %}{% endblock %}
+    
+    <script>
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            // Инициализация приложения
+            if (typeof App !== 'undefined') {
+                App.init();
+            }
+            
+            // Плавное появление контента
+            setTimeout(() => {
+                document.body.classList.add('loaded');
+            }, 500);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}itired 🎵 - {{ 'Вход' if mode == 'login' else 'Регистрация' }}{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card animate-fade-in">
+        <div class="auth-header">
+            <div class="auth-logo">
+                <i class="fas fa-music"></i>
+                <h1>itired</h1>
+            </div>
+            <p class="auth-subtitle">
+                {% if mode == 'login' %}
+                    Войдите в свой аккаунт
+                {% elif mode == 'register' %}
+                    Создайте новый аккаунт
+                {% elif mode == 'register_verify' %}
+                    Подтвердите email
+                {% endif %}
+            </p>
+        </div>
+        
+        {% if error %}
+        <div class="alert alert-error animate-slide-in-right">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+        </div>
+        {% endif %}
+        
+        {% if message %}
+        <div class="alert alert-success animate-slide-in-right">
+            <i class="fas fa-check-circle"></i>
+            <span>{{ message }}</span>
+        </div>
+        {% endif %}
+        
+        {% if mode == 'login' %}
+        <form method="POST" class="auth-form">
+            <div class="form-group">
+                <label class="form-label">Имя пользователя или Email</label>
+                <input type="text" name="username" class="form-control" 
+                       placeholder="Введите имя пользователя или email" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Пароль</label>
+                <input type="password" name="password" class="form-control" 
+                       placeholder="Введите пароль" required>
+                <div class="form-text">
+                    <a href="#" id="forgot-password">Забыли пароль?</a>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-sign-in-alt"></i> Войти
+                </button>
+            </div>
+            
+            {% if show_resend %}
+            <div class="form-group text-center">
+                <p>Не получили письмо с подтверждением?</p>
+                <button type="button" class="btn btn-outline btn-sm" id="resend-verification">
+                    <i class="fas fa-redo"></i> Отправить повторно
+                </button>
+                <input type="hidden" id="resend-email" value="{{ email }}">
+            </div>
+            {% endif %}
+        </form>
+        
+        <div class="auth-footer">
+            <p>Нет аккаунта? <a href="/register">Зарегистрироваться</a></p>
+        </div>
+        
+        {% elif mode == 'register' %}
+        <form method="POST" class="auth-form">
+            <div class="form-group">
+                <label class="form-label">Имя пользователя</label>
+                <input type="text" name="username" class="form-control" 
+                       placeholder="Введите имя пользователя" required>
+                <div class="form-text">Только латинские буквы, цифры и символы _ - .</div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Отображаемое имя</label>
+                <input type="text" name="display_name" class="form-control" 
+                       placeholder="Введите отображаемое имя (необязательно)">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-control" 
+                       placeholder="Введите email" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Пароль</label>
+                <input type="password" name="password" class="form-control" 
+                       placeholder="Введите пароль" required>
+                <div class="form-text">Не менее 6 символов</div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Подтвердите пароль</label>
+                <input type="password" name="confirm_password" class="form-control" 
+                       placeholder="Подтвердите пароль" required>
+            </div>
+            
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-user-plus"></i> Зарегистрироваться
+                </button>
+            </div>
+        </form>
+        
+        <div class="auth-footer">
+            <p>Уже есть аккаунт? <a href="/login">Войти</a></p>
+        </div>
+        
+        {% elif mode == 'register_verify' %}
+        <form method="POST" class="auth-form">
+            <div class="form-group">
+                <label class="form-label">Код подтверждения</label>
+                <input type="text" name="verification_code" class="form-control" 
+                       placeholder="Введите 6-значный код" required maxlength="6">
+                <div class="form-text">
+                    Код отправлен на <strong>{{ email }}</strong>
+                </div>
+            </div>
+            
+            <input type="hidden" name="email" value="{{ email }}">
+            
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-check-circle"></i> Подтвердить
+                </button>
+            </div>
+            
+            <div class="form-group text-center">
+                <p>Не получили код?</p>
+                <button type="button" class="btn btn-outline btn-sm" id="resend-code">
+                    <i class="fas fa-redo"></i> Отправить повторно
+                </button>
+            </div>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.auth-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+}
+
+.auth-card {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+    border-radius: var(--border-radius);
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 450px;
+    box-shadow: var(--shadow-lg);
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.auth-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.auth-logo i {
+    font-size: 2.5rem;
+    color: var(--accent-primary);
+}
+
+.auth-logo h1 {
+    font-size: 2.5rem;
+    margin: 0;
+}
+
+.auth-subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+.auth-form {
+    margin-bottom: 1.5rem;
+}
+
+.alert {
+    padding: 1rem;
+    border-radius: var(--border-radius-sm);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.alert-error {
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    color: var(--danger);
+}
+
+.alert-success {
+    background: rgba(81, 207, 102, 0.1);
+    border: 1px solid rgba(81, 207, 102, 0.3);
+    color: var(--success);
+}
+
+.auth-footer {
+    text-align: center;
+    border-top: 1px solid var(--border-color);
+    padding-top: 1.5rem;
+}
+
+.auth-footer p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Resend verification code
+    const resendCodeBtn = document.getElementById('resend-code');
+    const resendVerificationBtn = document.getElementById('resend-verification');
+    
+    if (resendCodeBtn) {
+        resendCodeBtn.addEventListener('click', async function() {
+            const email = '{{ email }}';
+            if (!email) return;
+            
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
+            
+            try {
+                const response = await fetch('/api/resend_verification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    Utils.toast(data.message, 'success');
+                } else {
+                    Utils.toast(data.message, 'error');
+                }
+            } catch (error) {
+                Utils.toast('Ошибка отправки кода', 'error');
+            } finally {
+                setTimeout(() => {
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fas fa-redo"></i> Отправить повторно';
+                }, 30000); // 30 second cooldown
+            }
+        });
+    }
+    
+    if (resendVerificationBtn) {
+        resendVerificationBtn.addEventListener('click', async function() {
+            const email = document.getElementById('resend-email').value;
+            if (!email) return;
+            
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
+            
+            try {
+                const response = await fetch('/api/force_resend_verification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    Utils.toast(data.message, 'success');
+                } else {
+                    Utils.toast(data.message, 'error');
+                }
+            } catch (error) {
+                Utils.toast('Ошибка отправки кода', 'error');
+            } finally {
+                setTimeout(() => {
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fas fa-redo"></i> Отправить повторно';
+                }, 30000);
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
