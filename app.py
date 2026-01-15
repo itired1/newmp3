@@ -4,7 +4,7 @@ from flask_caching import Cache
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_cors import CORS
-from models import db, User, UserCurrency, ShopCategory, ShopItem, UserInventory
+from models import db, User, UserCurrency, ShopCategory, ShopItem, UserInventory, TelegramSession
 from models import CurrencyTransaction, UserSettings, UserActivity, Friend, ListeningHistory, UserTheme
 from models import CacheItem, UserStatistic, APILog
 from utils import login_required, admin_required, add_currency, recommender, cache_response
@@ -23,6 +23,9 @@ from io import BytesIO
 import time
 from functools import wraps
 import random
+
+# Импортируем Telegram бота
+from telegram_bot import init_telegram_bot, telegram_bot
 
 # Определяем базовую директорию
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -111,6 +114,12 @@ def initialize_on_first_request():
                 
                 # Очищаем просроченный кэш
                 clean_expired_cache()
+                
+                # Инициализируем Telegram бота
+                telegram_token = os.getenv('TELEGRAM_BOT_TOKEN')
+                if telegram_token:
+                    init_telegram_bot(telegram_token)
+                    logger.info("Telegram bot initialized")
                 
                 app_initialized = True
                 logger.info("Приложение инициализировано успешно")
@@ -285,10 +294,9 @@ def login():
         user = User.query.filter((User.username == username) | (User.email == username)).first()
         
         if user and user.check_password(password):
-            if not user.email_verified:
-                return render_template('auth.html', mode='login', 
-                                     error='Email не подтвержден', 
-                                     email=user.email, show_resend=True)
+            # Проверяем, привязан ли Telegram (теперь опционально)
+            if not user.telegram_verified:
+                logger.info(f"User {user.username} logged in without Telegram verification")
             
             session.permanent = True
             session['user_id'] = user.id
@@ -312,7 +320,13 @@ def register():
         email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
         confirm_password = request.form.get('confirm_password', '')
+        telegram_code = request.form.get('telegram_code', '').strip().upper()
         
+        # Telegram регистрация
+        if telegram_code:
+            return handle_telegram_registration(username, email, password, confirm_password, telegram_code)
+        
+        # Старая регистрация (оставляем для обратной совместимости)
         if not all([username, email, password, confirm_password]):
             return render_template('auth.html', mode='register', error='Все поля обязательны')
         
@@ -327,16 +341,12 @@ def register():
         if existing:
             return render_template('auth.html', mode='register', error='Пользователь уже существует')
         
-        # Создаем пользователя
-        verification_code = str(uuid.uuid4())[:6].upper()
-        code_expires = datetime.utcnow() + timedelta(minutes=10)
-        
+        # Создаем пользователя (без верификации)
         user = User(
             username=username,
             email=email,
             display_name=username,
-            verification_code=verification_code,
-            verification_code_expires=code_expires
+            email_verified=True  # Теперь сразу верифицируем
         )
         user.set_password(password)
         
@@ -357,13 +367,127 @@ def register():
         
         db.session.commit()
         
-        # Отправляем email
-        if send_verification_email(email, verification_code):
-            return render_template('auth.html', mode='register_verify', email=email)
-        else:
-            return render_template('auth.html', mode='register', error='Ошибка отправки email')
+        # Авторизуем пользователя
+        session.permanent = True
+        session['user_id'] = user.id
+        session['username'] = user.username
+        
+        return redirect(url_for('index'))
     
     return render_template('auth.html', mode='register')
+
+def handle_telegram_registration(username, email, password, confirm_password, telegram_code):
+    """Обработка регистрации через Telegram"""
+    # Проверка кода Telegram
+    telegram_session = TelegramSession.query.filter_by(
+        session_data=json.dumps({'verification_code': telegram_code})
+    ).first()
+    
+    if not telegram_session:
+        # Попробуем найти по части JSON
+        sessions = TelegramSession.query.all()
+        for session in sessions:
+            try:
+                if session.session_data:
+                    data = json.loads(session.session_data)
+                    if data.get('verification_code') == telegram_code:
+                        telegram_session = session
+                        break
+            except:
+                continue
+    
+    if not telegram_session:
+        return render_template('auth.html', mode='register', error='Неверный код Telegram')
+    
+    # Проверка срока действия кода
+    if telegram_session.last_active and \
+       telegram_session.last_active < datetime.utcnow() - timedelta(minutes=10):
+        return render_template('auth.html', mode='register', error='Код истек')
+    
+    # Проверка данных
+    if not all([username, email, password, confirm_password]):
+        return render_template('auth.html', mode='register', error='Все поля обязательны')
+    
+    if password != confirm_password:
+        return render_template('auth.html', mode='register', error='Пароли не совпадают')
+    
+    if len(password) < 6:
+        return render_template('auth.html', mode='register', error='Пароль должен быть не менее 6 символов')
+    
+    # Проверка существующего пользователя
+    existing = User.query.filter((User.username == username) | (User.email == email)).first()
+    if existing:
+        return render_template('auth.html', mode='register', error='Пользователь уже существует')
+    
+    # Получаем данные из сессии
+    session_data = json.loads(telegram_session.session_data) if telegram_session.session_data else {}
+    
+    # Создаем пользователя с привязкой к Telegram
+    user = User(
+        username=username,
+        email=email,
+        display_name=username,
+        email_verified=True,
+        telegram_id=telegram_session.telegram_id,
+        telegram_username=telegram_session.username,
+        telegram_verified=True
+    )
+    user.set_password(password)
+    
+    db.session.add(user)
+    
+    # Привязываем сессию к пользователю
+    telegram_session.user_id = user.id
+    telegram_session.session_data = None  # Очищаем код
+    
+    # Создаем настройки по умолчанию
+    settings = UserSettings(user_id=user.id)
+    db.session.add(settings)
+    
+    # Создаем начальную валюту (больше монет за регистрацию через Telegram)
+    currency = UserCurrency(user_id=user.id, balance=100)
+    db.session.add(currency)
+    
+    # Создаем статистику
+    stats = UserStatistic(user_id=user.id)
+    db.session.add(stats)
+    
+    db.session.commit()
+    
+    # Отправляем уведомление в Telegram
+    if telegram_bot:
+        try:
+            # Используем асинхронный вызов в отдельном потоке
+            import asyncio
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            async def send_notification():
+                try:
+                    await telegram_bot.bot_app.bot.send_message(
+                        chat_id=telegram_session.chat_id,
+                        text=f"✅ Регистрация успешна!\n\n"
+                             f"Добро пожаловать в itired, {username}!\n"
+                             f"На твой счет начислено 100 монет 🎉\n\n"
+                             f"Используй команды:\n"
+                             f"/balance - проверить баланс\n"
+                             f"/daily - ежедневная награда\n"
+                             f"/profile - профиль",
+                        parse_mode="Markdown"
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to send Telegram notification: {e}")
+            
+            loop.run_until_complete(send_notification())
+        except Exception as e:
+            logger.error(f"Error sending Telegram notification: {e}")
+    
+    # Авторизуем пользователя
+    session.permanent = True
+    session['user_id'] = user.id
+    session['username'] = user.username
+    
+    return redirect(url_for('index'))
 
 @app.route('/logout')
 def logout():
@@ -1451,62 +1575,93 @@ def admin_add_currency():
     else:
         return jsonify({'success': False, 'message': 'Ошибка добавления валюты'})
 
-# Утилиты
-@app.route('/api/verify', methods=['POST'])
+# Telegram API маршруты
+@app.route('/api/telegram/link', methods=['POST'])
+@login_required
 @api_logged
-def verify_email():
+def link_telegram_account():
+    """Привязка Telegram аккаунта к существующему пользователю"""
+    user = User.query.get(session['user_id'])
     data = request.get_json()
-    email = data.get('email', '').strip().lower()
-    code = data.get('code', '').strip().upper()
     
-    user = User.query.filter_by(email=email).first()
-    if not user:
-        return jsonify({'success': False, 'message': 'Пользователь не найден'})
+    telegram_code = data.get('telegram_code', '').strip().upper()
     
-    if user.email_verified:
-        return jsonify({'success': False, 'message': 'Email уже подтвержден'})
+    if not telegram_code:
+        return jsonify({'success': False, 'message': 'Введите код'})
     
-    if user.verification_code != code:
-        return jsonify({'success': False, 'message': 'Неверный код подтверждения'})
+    # Ищем сессию с этим кодом
+    telegram_session = TelegramSession.query.filter_by(
+        session_data=json.dumps({'verification_code': telegram_code})
+    ).first()
     
-    if user.verification_code_expires and user.verification_code_expires < datetime.utcnow():
-        return jsonify({'success': False, 'message': 'Код подтверждения истек'})
+    if not telegram_session:
+        # Попробуем найти по части JSON
+        sessions = TelegramSession.query.all()
+        for session in sessions:
+            try:
+                if session.session_data:
+                    data = json.loads(session.session_data)
+                    if data.get('verification_code') == telegram_code:
+                        telegram_session = session
+                        break
+            except:
+                continue
     
-    user.email_verified = True
-    user.verification_code = None
-    user.verification_code_expires = None
+    if not telegram_session:
+        return jsonify({'success': False, 'message': 'Неверный код'})
+    
+    # Проверяем срок действия
+    if telegram_session.last_active and \
+       telegram_session.last_active < datetime.utcnow() - timedelta(minutes=10):
+        return jsonify({'success': False, 'message': 'Код истек'})
+    
+    # Проверяем, не привязан ли уже этот Telegram
+    existing_user = User.query.filter_by(telegram_id=telegram_session.telegram_id).first()
+    if existing_user:
+        return jsonify({'success': False, 'message': 'Этот Telegram уже привязан к другому аккаунту'})
+    
+    # Привязываем Telegram
+    user.telegram_id = telegram_session.telegram_id
+    user.telegram_username = telegram_session.username
+    user.telegram_verified = True
+    
+    telegram_session.user_id = user.id
+    telegram_session.session_data = None
+    
     db.session.commit()
     
-    session['user_id'] = user.id
-    session['username'] = user.username
+    # Отправляем уведомление
+    if telegram_bot:
+        try:
+            import asyncio
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            async def send_notification():
+                try:
+                    await telegram_bot.bot_app.bot.send_message(
+                        chat_id=telegram_session.chat_id,
+                        text=f"✅ Telegram успешно привязан!\n\n"
+                             f"Аккаунт: {user.username}\n"
+                             f"Баланс: {user.currency.balance if user.currency else 0} монет\n\n"
+                             f"Теперь ты можешь:\n"
+                             f"• Получать уведомления\n"
+                             f"• Использовать команды бота\n"
+                             f"• Получать ежедневные награды",
+                        parse_mode="Markdown"
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to send Telegram notification: {e}")
+            
+            loop.run_until_complete(send_notification())
+        except Exception as e:
+            logger.error(f"Error sending Telegram notification: {e}")
     
-    return jsonify({'success': True, 'message': 'Email успешно подтвержден'})
-
-@app.route('/api/resend_verification', methods=['POST'])
-@api_logged
-def resend_verification():
-    data = request.get_json()
-    email = data.get('email', '').strip().lower()
-    
-    user = User.query.filter_by(email=email).first()
-    if not user:
-        return jsonify({'success': False, 'message': 'Пользователь не найден'})
-    
-    if user.email_verified:
-        return jsonify({'success': False, 'message': 'Email уже подтвержден'})
-    
-    # Генерируем новый код
-    verification_code = str(uuid.uuid4())[:6].upper()
-    code_expires = datetime.utcnow() + timedelta(minutes=10)
-    
-    user.verification_code = verification_code
-    user.verification_code_expires = code_expires
-    db.session.commit()
-    
-    if send_verification_email(email, verification_code):
-        return jsonify({'success': True, 'message': 'Код отправлен повторно'})
-    else:
-        return jsonify({'success': False, 'message': 'Ошибка отправки email'})
+    return jsonify({
+        'success': True,
+        'message': 'Telegram успешно привязан',
+        'telegram_username': user.telegram_username
+    })
 
 # Статические файлы
 @app.route('/static/<path:filename>')
@@ -1533,7 +1688,8 @@ def health_check():
             'status': 'healthy',
             'timestamp': datetime.utcnow().isoformat(),
             'database': 'connected',
-            'redis': 'connected' if redis_ok else 'disconnected'
+            'redis': 'connected' if redis_ok else 'disconnected',
+            'telegram_bot': 'active' if telegram_bot else 'disabled'
         }), 200
     except Exception as e:
         return jsonify({
