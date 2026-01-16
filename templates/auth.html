@@ -15,8 +15,6 @@
                     Войдите в свой аккаунт
                 {% elif mode == 'register' %}
                     Создайте новый аккаунт
-                {% elif mode == 'register_telegram' %}
-                    Регистрация через Telegram
                 {% endif %}
             </p>
         </div>
@@ -64,9 +62,59 @@
         </div>
         
         {% elif mode == 'register' %}
-        <form method="POST" class="auth-form">
+        <div class="telegram-registration-info">
+            <div class="telegram-icon">
+                <i class="fab fa-telegram"></i>
+            </div>
+            <h3>Регистрация через Telegram</h3>
+            <p>Получи бонус <strong>200 монет</strong> за регистрацию через Telegram!</p>
+            
+            <div class="telegram-steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>Найди бота в Telegram</h4>
+                        <p>Найди <strong>@itired_music_bot</strong> в Telegram</p>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>Отправь команду /code</h4>
+                        <p>Напиши боту команду <code>/code</code> для получения кода регистрации</p>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>Получи код</h4>
+                        <p>Бот отправит тебе уникальный код подтверждения</p>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h4>Введи код здесь</h4>
+                        <p>Введи код в форму ниже и заполни остальные данные</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <form method="POST" class="auth-form" id="telegram-register-form">
             <div class="form-group">
-                <label class="form-label">Имя пользователя</label>
+                <label class="form-label">Код из Telegram *</label>
+                <input type="text" name="telegram_code" class="form-control" 
+                       placeholder="Введите код из Telegram" required maxlength="8" 
+                       pattern="[A-Z0-9]{6,8}" title="6-8 символов (буквы и цифры)">
+                <div class="form-text">Код действует 10 минут</div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Имя пользователя *</label>
                 <input type="text" name="username" class="form-control" 
                        placeholder="Введите имя пользователя" required>
                 <div class="form-text">Только латинские буквы, цифры и символы _ - .</div>
@@ -79,27 +127,27 @@
             </div>
             
             <div class="form-group">
-                <label class="form-label">Email</label>
+                <label class="form-label">Email *</label>
                 <input type="email" name="email" class="form-control" 
                        placeholder="Введите email" required>
             </div>
             
             <div class="form-group">
-                <label class="form-label">Пароль</label>
+                <label class="form-label">Пароль *</label>
                 <input type="password" name="password" class="form-control" 
                        placeholder="Введите пароль" required>
                 <div class="form-text">Не менее 6 символов</div>
             </div>
             
             <div class="form-group">
-                <label class="form-label">Подтвердите пароль</label>
+                <label class="form-label">Подтвердите пароль *</label>
                 <input type="password" name="confirm_password" class="form-control" 
                        placeholder="Подтвердите пароль" required>
             </div>
             
             <div class="form-group">
-                <button type="submit" class="btn btn-primary btn-block">
-                    <i class="fas fa-user-plus"></i> Зарегистрироваться
+                <button type="submit" class="btn btn-telegram btn-block">
+                    <i class="fab fa-telegram"></i> Зарегистрироваться через Telegram
                 </button>
             </div>
         </form>
@@ -108,202 +156,45 @@
             <span>или</span>
         </div>
         
-        <div class="telegram-registration">
-            <div class="telegram-info">
-                <i class="fab fa-telegram"></i>
-                <h3>Регистрация через Telegram</h3>
-                <p class="telegram-description">
-                    Получи бонус 100 монет за регистрацию через Telegram!
-                </p>
+        <form method="POST" class="auth-form" id="regular-register-form">
+            <div class="form-group">
+                <label class="form-label">Имя пользователя *</label>
+                <input type="text" name="username" class="form-control" 
+                       placeholder="Введите имя пользователя" required>
             </div>
             
-            <div class="telegram-steps">
-                <div class="step">
-                    <div class="step-number">1</div>
-                    <div class="step-content">
-                        <h4>Найди бота в Telegram</h4>
-                        <p>Найди <strong>@itired_music_bot</strong> в Telegram</p>
-                    </div>
-                </div>
-                
-                <div class="step">
-                    <div class="step-number">2</div>
-                    <div class="step-content">
-                        <h4>Отправь команду /start</h4>
-                        <p>Напиши боту команду <code>/start</code> и выбери "📝 Зарегистрироваться"</p>
-                    </div>
-                </div>
-                
-                <div class="step">
-                    <div class="step-number">3</div>
-                    <div class="step-content">
-                        <h4>Получи код</h4>
-                        <p>Бот отправит тебе 6-значный код подтверждения</p>
-                    </div>
-                </div>
-                
-                <div class="step">
-                    <div class="step-number">4</div>
-                    <div class="step-content">
-                        <h4>Введи код здесь</h4>
-                        <p>Введи код в форме ниже и заполни данные</p>
-                    </div>
-                </div>
+            <div class="form-group">
+                <label class="form-label">Email *</label>
+                <input type="email" name="email" class="form-control" 
+                       placeholder="Введите email" required>
             </div>
             
-            <form method="POST" class="auth-form" id="telegram-form" style="display: none;">
-                <div class="form-group">
-                    <label class="form-label">Код из Telegram</label>
-                    <input type="text" name="telegram_code" class="form-control" 
-                           placeholder="Введите 6-значный код из Telegram" required maxlength="6" 
-                           pattern="[0-9]{6}" title="6 цифр">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Имя пользователя</label>
-                    <input type="text" name="username" class="form-control" 
-                           placeholder="Введите имя пользователя" required>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="email" name="email" class="form-control" 
-                           placeholder="Введите email" required>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Пароль</label>
-                    <input type="password" name="password" class="form-control" 
-                           placeholder="Введите пароль" required>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Подтвердите пароль</label>
-                    <input type="password" name="confirm_password" class="form-control" 
-                           placeholder="Подтвердите пароль" required>
-                </div>
-                
-                <div class="form-group">
-                    <button type="submit" class="btn btn-telegram btn-block">
-                        <i class="fab fa-telegram"></i> Зарегистрироваться через Telegram
-                    </button>
-                </div>
-            </form>
+            <div class="form-group">
+                <label class="form-label">Пароль *</label>
+                <input type="password" name="password" class="form-control" 
+                       placeholder="Введите пароль" required>
+            </div>
             
-            <div class="telegram-actions">
-                <button type="button" class="btn btn-outline btn-block" id="show-telegram-form">
-                    <i class="fab fa-telegram"></i> У меня есть код из Telegram
+            <div class="form-group">
+                <label class="form-label">Подтвердите пароль *</label>
+                <input type="password" name="confirm_password" class="form-control" 
+                       placeholder="Подтвердите пароль" required>
+            </div>
+            
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-user-plus"></i> Обычная регистрация
                 </button>
             </div>
-        </div>
+        </form>
         
         <div class="auth-footer">
             <p>Уже есть аккаунт? <a href="/login">Войти</a></p>
         </div>
-        
-        {% elif mode == 'register_telegram' %}
-        <div class="telegram-registration">
-            <div class="telegram-info">
-                <i class="fab fa-telegram telegram-icon"></i>
-                <h3>📱 Регистрация через Telegram</h3>
-                <p class="telegram-description">
-                    Получи бонус <strong>100 монет</strong> за регистрацию через Telegram!
-                </p>
-            </div>
-            
-            <div class="telegram-steps">
-                <div class="step">
-                    <div class="step-number">1</div>
-                    <div class="step-content">
-                        <h4>Найди бота в Telegram</h4>
-                        <p>Найди <strong>@itired_music_bot</strong> в Telegram</p>
-                    </div>
-                </div>
-                
-                <div class="step">
-                    <div class="step-number">2</div>
-                    <div class="step-content">
-                        <h4>Отправь команду /start</h4>
-                        <p>Напиши боту команду <code>/start</code> и выбери "📝 Зарегистрироваться"</p>
-                    </div>
-                </div>
-                
-                <div class="step">
-                    <div class="step-number">3</div>
-                    <div class="step-content">
-                        <h4>Получи код</h4>
-                        <p>Бот отправит тебе 6-значный код подтверждения</p>
-                    </div>
-                </div>
-                
-                <div class="step">
-                    <div class="step-number">4</div>
-                    <div class="step-content">
-                        <h4>Введи код здесь</h4>
-                        <p>Введи код в форме ниже и заполни данные</p>
-                    </div>
-                </div>
-            </div>
-            
-            <form method="POST" class="auth-form">
-                <div class="form-group">
-                    <label class="form-label">Код из Telegram *</label>
-                    <input type="text" name="telegram_code" class="form-control" 
-                           placeholder="Введите 6-значный код из Telegram" required maxlength="6" 
-                           pattern="[0-9]{6}" title="6 цифр">
-                    <div class="form-text">Код действует 10 минут</div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Имя пользователя *</label>
-                    <input type="text" name="username" class="form-control" 
-                           placeholder="Введите имя пользователя" required>
-                    <div class="form-text">Только латинские буквы, цифры и символы _ - .</div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Отображаемое имя</label>
-                    <input type="text" name="display_name" class="form-control" 
-                           placeholder="Введите отображаемое имя (необязательно)">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Email *</label>
-                    <input type="email" name="email" class="form-control" 
-                           placeholder="Введите email" required>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Пароль *</label>
-                    <input type="password" name="password" class="form-control" 
-                           placeholder="Введите пароль" required>
-                    <div class="form-text">Не менее 6 символов</div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Подтвердите пароль *</label>
-                    <input type="password" name="confirm_password" class="form-control" 
-                           placeholder="Подтвердите пароль" required>
-                </div>
-                
-                <div class="form-group">
-                    <button type="submit" class="btn btn-telegram btn-block">
-                        <i class="fab fa-telegram"></i> Зарегистрироваться через Telegram
-                    </button>
-                </div>
-            </form>
-            
-            <div class="auth-footer">
-                <p>Хотите обычную регистрацию? <a href="/register">Обычная регистрация</a></p>
-                <p>Уже есть аккаунт? <a href="/login">Войти</a></p>
-            </div>
-        </div>
         {% endif %}
     </div>
 </div>
-{% endblock %}
 
-{% block extra_css %}
 <style>
 .auth-container {
     display: flex;
@@ -311,279 +202,135 @@
     justify-content: center;
     min-height: 100vh;
     padding: 2rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 .auth-card {
-    background: var(--bg-card);
-    border: 1px solid var(--glass-border);
-    backdrop-filter: blur(10px);
-    border-radius: var(--border-radius);
-    padding: 2.5rem;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    padding: 3rem;
     width: 100%;
-    max-width: 500px;
-    box-shadow: var(--shadow-lg);
+    max-width: 600px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
-.auth-header {
-    text-align: center;
+.telegram-registration-info {
+    background: linear-gradient(135deg, #0088cc 0%, #00aaff 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 2rem;
     margin-bottom: 2rem;
-}
-
-.auth-logo {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
-
-.auth-logo i {
-    font-size: 2.5rem;
-    color: var(--accent-primary);
-}
-
-.auth-logo h1 {
-    font-size: 2.5rem;
-    margin: 0;
-}
-
-.auth-subtitle {
-    color: var(--text-secondary);
-    font-size: 1.1rem;
-}
-
-.auth-form {
-    margin-bottom: 1.5rem;
-}
-
-.alert {
-    padding: 1rem;
-    border-radius: var(--border-radius-sm);
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-.alert-error {
-    background: rgba(255, 107, 107, 0.1);
-    border: 1px solid rgba(255, 107, 107, 0.3);
-    color: var(--danger);
-}
-
-.alert-success {
-    background: rgba(81, 207, 102, 0.1);
-    border: 1px solid rgba(81, 207, 102, 0.3);
-    color: var(--success);
-}
-
-.auth-footer {
     text-align: center;
-    border-top: 1px solid var(--border-color);
-    padding-top: 1.5rem;
 }
 
-.auth-footer p {
-    margin: 0;
-    color: var(--text-secondary);
-}
-
-.auth-footer a {
-    color: var(--accent-primary);
-    text-decoration: none;
-}
-
-.auth-footer a:hover {
-    text-decoration: underline;
-}
-
-/* Telegram registration styles */
-.telegram-registration {
-    margin-top: 2rem;
-}
-
-.telegram-info {
-    text-align: center;
-    margin-bottom: 2rem;
-}
-
-.telegram-info i {
+.telegram-icon {
     font-size: 3rem;
-    color: #0088cc;
     margin-bottom: 1rem;
-}
-
-.telegram-info h3 {
-    margin: 0.5rem 0;
-    color: var(--text-primary);
-}
-
-.telegram-description {
-    color: var(--text-secondary);
-    font-size: 1rem;
 }
 
 .telegram-steps {
-    margin-bottom: 2rem;
+    margin-top: 2rem;
 }
 
 .step {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     margin-bottom: 1.5rem;
+    text-align: left;
 }
 
 .step-number {
-    flex-shrink: 0;
-    width: 32px;
-    height: 32px;
-    background: linear-gradient(135deg, #0088cc, #00aaff);
-    color: white;
+    width: 40px;
+    height: 40px;
+    background: white;
+    color: #0088cc;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
+    font-size: 1.2rem;
     margin-right: 1rem;
-    margin-top: 0.25rem;
+    flex-shrink: 0;
 }
 
 .step-content h4 {
-    margin: 0 0 0.25rem 0;
-    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+    color: white;
 }
 
 .step-content p {
     margin: 0;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-}
-
-.step-content code {
-    background: var(--bg-secondary);
-    padding: 0.2rem 0.4rem;
-    border-radius: 4px;
-    font-family: monospace;
+    opacity: 0.9;
 }
 
 .btn-telegram {
-    background: linear-gradient(135deg, #0088cc, #00aaff);
+    background: linear-gradient(135deg, #0088cc 0%, #00aaff 100%);
     color: white;
     border: none;
+    padding: 1rem;
+    font-size: 1.1rem;
 }
 
 .btn-telegram:hover {
-    background: linear-gradient(135deg, #0077b3, #0099e6);
+    background: linear-gradient(135deg, #0077b3 0%, #0099e6 100%);
     color: white;
 }
 
 .auth-divider {
-    display: flex;
-    align-items: center;
     text-align: center;
-    margin: 1.5rem 0;
-    color: var(--text-secondary);
-}
-
-.auth-divider::before,
-.auth-divider::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid var(--border-color);
+    margin: 2rem 0;
+    position: relative;
 }
 
 .auth-divider span {
+    background: white;
     padding: 0 1rem;
+    position: relative;
+    z-index: 1;
 }
 
-.telegram-actions {
-    margin-top: 1rem;
-}
-
-.telegram-icon {
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.05);
-    }
-    100% {
-        transform: scale(1);
-    }
+.auth-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #ddd;
+    z-index: 0;
 }
 </style>
-{% endblock %}
 
-{% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Показать форму Telegram регистрации
-    const showTelegramFormBtn = document.getElementById('show-telegram-form');
-    const telegramForm = document.getElementById('telegram-form');
-    
-    if (showTelegramFormBtn && telegramForm) {
-        showTelegramFormBtn.addEventListener('click', function() {
-            telegramForm.style.display = 'block';
-            this.style.display = 'none';
-            
-            // Прокрутить к форме
-            telegramForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            
-            // Сфокусироваться на поле кода
-            const codeInput = telegramForm.querySelector('input[name="telegram_code"]');
-            if (codeInput) {
-                codeInput.focus();
-            }
-        });
-    }
-    
     // Валидация формы Telegram
-    const telegramFormElement = document.querySelector('form#telegram-form');
-    if (telegramFormElement) {
-        telegramFormElement.addEventListener('submit', function(e) {
+    const telegramForm = document.getElementById('telegram-register-form');
+    if (telegramForm) {
+        telegramForm.addEventListener('submit', function(e) {
             const codeInput = this.querySelector('input[name="telegram_code"]');
-            if (codeInput && !/^\d{6}$/.test(codeInput.value)) {
+            if (codeInput && !/^[A-Z0-9]{6,8}$/.test(codeInput.value)) {
                 e.preventDefault();
-                Utils.toast('Введите 6-значный код из Telegram', 'error');
+                alert('Введите корректный код из Telegram (6-8 символов, буквы и цифры)');
                 codeInput.focus();
             }
         });
     }
     
-    // Валидация других форм
-    const forms = document.querySelectorAll('.auth-form');
-    forms.forEach(form => {
-        form.addEventListener('submit', function(e) {
+    // Валидация обычной формы
+    const regularForm = document.getElementById('regular-register-form');
+    if (regularForm) {
+        regularForm.addEventListener('submit', function(e) {
             const password = this.querySelector('input[name="password"]');
             const confirmPassword = this.querySelector('input[name="confirm_password"]');
             
             if (password && confirmPassword && password.value !== confirmPassword.value) {
                 e.preventDefault();
-                Utils.toast('Пароли не совпадают', 'error');
+                alert('Пароли не совпадают');
                 confirmPassword.focus();
             }
         });
-    });
-    
-    // Забыли пароль
-    const forgotPasswordLink = document.getElementById('forgot-password');
-    if (forgotPasswordLink) {
-        forgotPasswordLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            Utils.toast('Функция восстановления пароля в разработке', 'info');
-        });
     }
-    
-    // Анимация шагов
-    const steps = document.querySelectorAll('.step');
-    steps.forEach((step, index) => {
-        step.style.animationDelay = `${index * 100}ms`;
-        step.classList.add('animate-slide-in-right');
-    });
 });
 </script>
 {% endblock %}

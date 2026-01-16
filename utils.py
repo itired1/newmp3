@@ -7,6 +7,7 @@ import requests
 import secrets
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from PIL import Image
 from io import BytesIO
 import base64
@@ -15,37 +16,440 @@ import re
 import json
 from collections import Counter
 from functools import wraps, lru_cache
-from flask import session, jsonify, request, g
+from flask import session, jsonify, request, g, current_app
 from yandex_music import Client
 import vk_api
-import redis  # Установите pip install redis
+import redis
 from redis.exceptions import ConnectionError as RedisConnectionError
-from sqlalchemy import case  # Добавьте этот импорт
+import hashlib
+import qrcode
+import io
 
 logger = logging.getLogger(__name__)
 
-# --- Конфигурация из переменных окружения ---
-EMAIL_CONFIG = {
-    'smtp_server': os.getenv('SMTP_SERVER', 'smtp.gmail.com'),
-    'smtp_port': int(os.getenv('SMTP_PORT', 587)),
-    'email': os.getenv('SMTP_EMAIL'),
-    'password': os.getenv('SMTP_PASSWORD')
+# Конфигурация Telegram бота
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
+SERVER_URL = os.getenv('SERVER_URL', 'http://localhost:5001')
+
+# Конфигурация SMTP
+SMTP_CONFIG = {
+    'host': os.getenv('SMTP_HOST', 'smtp.gmail.com'),
+    'port': int(os.getenv('SMTP_PORT', 587)),
+    'username': os.getenv('SMTP_USERNAME'),
+    'password': os.getenv('SMTP_PASSWORD'),
+    'from_email': os.getenv('SMTP_FROM_EMAIL', 'noreply@itired.com'),
+    'from_name': os.getenv('SMTP_FROM_NAME', 'itired Music Platform')
 }
 
-UPLOAD_FOLDER = 'static/uploads'
-os.makedirs(os.path.join(UPLOAD_FOLDER, 'avatars'), exist_ok=True)
-os.makedirs(os.path.join(UPLOAD_FOLDER, 'banners'), exist_ok=True)
+# Конфигурация загрузки файлов
+UPLOAD_CONFIG = {
+    'max_size_mb': 16,
+    'allowed_extensions': {'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'mp3', 'wav', 'ogg', 'mp4', 'avi', 'mov'},
+    'image_formats': {'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'},
+    'audio_formats': {'mp3', 'wav', 'ogg'},
+    'video_formats': {'mp4', 'avi', 'mov'}
+}
 
 # --- Redis для кэширования ---
 redis_client = None
 try:
     redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
-    redis_client = redis.from_url(redis_url, decode_responses=True)
+    redis_client = redis.from_url(redis_url, decode_responses=True, socket_connect_timeout=5)
     redis_client.ping()
     logger.info("Redis подключен успешно")
-except (RedisConnectionError, redis.exceptions.ConnectionError):
-    logger.warning("Redis недоступен, используется in-memory кэш")
+except (RedisConnectionError, redis.exceptions.ConnectionError, redis.exceptions.TimeoutError) as e:
+    logger.warning(f"Redis недоступен, используется in-memory кэш: {e}")
     redis_client = None
+
+# --- Вспомогательные функции ---
+def generate_token(length=32):
+    """Генерация токена"""
+    return secrets.token_hex(length)
+
+def generate_code(length=6):
+    """Генерация числового кода"""
+    return ''.join(random.choices('0123456789', k=length))
+
+def generate_qr_code(data, size=10):
+    """Генерация QR кода"""
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=size,
+        border=4,
+    )
+    qr.add_data(data)
+    qr.make(fit=True)
+    
+    img = qr.make_image(fill_color="black", back_color="white")
+    img_bytes = io.BytesIO()
+    img.save(img_bytes, format='PNG')
+    img_bytes.seek(0)
+    
+    return img_bytes
+
+# --- Функции для работы с Telegram ---
+def send_telegram_message(chat_id, text, parse_mode='Markdown', disable_web_page_preview=True):
+    """Отправка сообщения через Telegram бота"""
+    if not TELEGRAM_BOT_TOKEN:
+        logger.warning("Telegram bot token not set")
+        return False
+    
+    try:
+        url = f"{TELEGRAM_API_URL}/sendMessage"
+        payload = {
+            'chat_id': chat_id,
+            'text': text,
+            'parse_mode': parse_mode,
+            'disable_web_page_preview': disable_web_page_preview
+        }
+        
+        response = requests.post(url, json=payload, timeout=10)
+        if response.status_code == 200:
+            return True
+        else:
+            logger.error(f"Telegram API error: {response.status_code} - {response.text}")
+            return False
+    except Exception as e:
+        logger.error(f"Telegram send error: {e}")
+        return False
+
+def send_telegram_photo(chat_id, photo_url, caption=None):
+    """Отправка фото через Telegram"""
+    if not TELEGRAM_BOT_TOKEN:
+        return False
+    
+    try:
+        url = f"{TELEGRAM_API_URL}/sendPhoto"
+        payload = {
+            'chat_id': chat_id,
+            'photo': photo_url,
+            'caption': caption,
+            'parse_mode': 'Markdown'
+        }
+        
+        response = requests.post(url, json=payload, timeout=10)
+        return response.status_code == 200
+    except Exception as e:
+        logger.error(f"Telegram photo send error: {e}")
+        return False
+
+def send_telegram_document(chat_id, document_url, caption=None):
+    """Отправка документа через Telegram"""
+    if not TELEGRAM_BOT_TOKEN:
+        return False
+    
+    try:
+        url = f"{TELEGRAM_API_URL}/sendDocument"
+        payload = {
+            'chat_id': chat_id,
+            'document': document_url,
+            'caption': caption
+        }
+        
+        response = requests.post(url, json=payload, timeout=10)
+        return response.status_code == 200
+    except Exception as e:
+        logger.error(f"Telegram document send error: {e}")
+        return False
+
+def get_telegram_user_info(user_id):
+    """Получение информации о пользователе Telegram"""
+    if not TELEGRAM_BOT_TOKEN:
+        return None
+    
+    try:
+        url = f"{TELEGRAM_API_URL}/getChat"
+        payload = {
+            'chat_id': user_id
+        }
+        
+        response = requests.post(url, json=payload, timeout=10)
+        if response.status_code == 200:
+            return response.json().get('result', {})
+        return None
+    except Exception as e:
+        logger.error(f"Telegram get user info error: {e}")
+        return None
+
+def create_telegram_login_url(bot_username, redirect_url=None):
+    """Создание URL для входа через Telegram"""
+    bot_username = bot_username.lstrip('@')
+    
+    if redirect_url:
+        # Создаем кнопку для входа через Telegram
+        return f"https://t.me/{bot_username}?start={hashlib.md5(redirect_url.encode()).hexdigest()}"
+    else:
+        return f"https://t.me/{bot_username}"
+
+def send_telegram_notification(user_id, title, message, notification_type='info'):
+    """Отправка уведомления через Telegram"""
+    from models import User
+    
+    user = User.query.get(user_id)
+    if not user or not user.telegram_id:
+        return False
+    
+    # Определяем эмодзи по типу уведомления
+    emoji_map = {
+        'info': 'ℹ️',
+        'success': '✅',
+        'warning': '⚠️',
+        'error': '❌',
+        'gift': '🎁',
+        'money': '💰',
+        'music': '🎵',
+        'shop': '🛍️',
+        'friend': '👥',
+        'system': '🔧'
+    }
+    
+    emoji = emoji_map.get(notification_type, '📢')
+    
+    formatted_message = f"{emoji} *{title}*\n\n{message}\n\n_Отправлено {datetime.now().strftime('%d.%m.%Y %H:%M')}_"
+    
+    return send_telegram_message(user.telegram_id, formatted_message)
+
+# --- Функции для работы с файлами ---
+def save_uploaded_file(file_data, file_type='avatar', filename=None):
+    """Сохранение загруженного файла с оптимизацией"""
+    try:
+        # Определяем папку для сохранения
+        if file_type == 'avatar':
+            folder = 'avatars'
+            max_size = (400, 400)
+            quality = 85
+        elif file_type == 'banner':
+            folder = 'banners'
+            max_size = (1200, 300)
+            quality = 90
+        elif file_type == 'shop_item':
+            folder = 'shop_items'
+            max_size = (800, 800)
+            quality = 90
+        elif file_type == 'music_cover':
+            folder = 'covers'
+            max_size = (500, 500)
+            quality = 90
+        else:
+            folder = 'others'
+            max_size = (1024, 1024)
+            quality = 85
+        
+        upload_dir = os.path.join('static', 'uploads', folder)
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # Генерация имени файла
+        if not filename:
+            file_ext = 'jpg' if file_type in ['avatar', 'banner', 'shop_item', 'music_cover'] else 'bin'
+            filename = f"{uuid.uuid4().hex}.{file_ext}"
+        
+        filepath = os.path.join(upload_dir, filename)
+        
+        # Обработка изображений
+        if file_type in ['avatar', 'banner', 'shop_item', 'music_cover']:
+            image = Image.open(BytesIO(file_data))
+            
+            # Конвертируем RGBA в RGB
+            if image.mode in ('RGBA', 'LA'):
+                background = Image.new('RGB', image.size, (45, 45, 45))
+                background.paste(image, mask=image.split()[-1])
+                image = background
+            elif image.mode != 'RGB':
+                image = image.convert('RGB')
+            
+            # Оптимизация размера
+            image.thumbnail(max_size, Image.Resampling.LANCZOS)
+            
+            # Сохранение с оптимизацией
+            image.save(filepath, 'JPEG', quality=quality, optimize=True, progressive=True)
+        else:
+            # Сохранение других файлов
+            with open(filepath, 'wb') as f:
+                f.write(file_data)
+        
+        return f"/static/uploads/{folder}/{filename}"
+    except Exception as e:
+        logger.error(f"Error saving uploaded file: {e}")
+        return None
+
+def validate_image(file_data, max_size_mb=5):
+    """Валидация изображения"""
+    try:
+        # Проверка размера
+        if len(file_data) > max_size_mb * 1024 * 1024:
+            return False, f"Размер файла превышает {max_size_mb}MB"
+        
+        # Проверка формата
+        image = Image.open(BytesIO(file_data))
+        image.verify()
+        
+        # Проверка разрешения
+        if image.size[0] > 5000 or image.size[1] > 5000:
+            return False, "Слишком большое разрешение"
+        
+        return True, "OK"
+    except Exception as e:
+        return False, f"Некорректный файл: {str(e)}"
+
+def validate_audio(file_data, max_size_mb=10):
+    """Валидация аудио файла"""
+    try:
+        if len(file_data) > max_size_mb * 1024 * 1024:
+            return False, f"Размер файла превышает {max_size_mb}MB"
+        
+        # Базовые проверки аудио файла
+        if len(file_data) < 100:  # Минимальный размер для аудио
+            return False, "Файл слишком маленький для аудио"
+        
+        # Проверка сигнатуры файла (MP3, WAV, OGG)
+        if file_data[:3] == b'ID3' or file_data[:2] == b'\xff\xfb':
+            return True, "OK"  # MP3
+        elif file_data[:4] == b'RIFF':
+            return True, "OK"  # WAV
+        elif file_data[:4] == b'OggS':
+            return True, "OK"  # OGG
+        
+        return False, "Неподдерживаемый формат аудио"
+    except Exception as e:
+        return False, f"Ошибка валидации аудио: {str(e)}"
+
+# --- Email функции ---
+def send_email(to_email, subject, body_html, body_text=None):
+    """Отправка email"""
+    if not all([SMTP_CONFIG['host'], SMTP_CONFIG['username'], SMTP_CONFIG['password']]):
+        logger.warning("SMTP not configured")
+        return False
+    
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['From'] = f"{SMTP_CONFIG['from_name']} <{SMTP_CONFIG['from_email']}>"
+        msg['To'] = to_email
+        msg['Subject'] = subject
+        
+        if body_text:
+            part1 = MIMEText(body_text, 'plain', 'utf-8')
+            msg.attach(part1)
+        
+        part2 = MIMEText(body_html, 'html', 'utf-8')
+        msg.attach(part2)
+        
+        server = smtplib.SMTP(SMTP_CONFIG['host'], SMTP_CONFIG['port'])
+        server.starttls()
+        server.login(SMTP_CONFIG['username'], SMTP_CONFIG['password'])
+        server.send_message(msg)
+        server.quit()
+        
+        logger.info(f"Email sent to {to_email}")
+        return True
+    except Exception as e:
+        logger.error(f"Error sending email: {e}")
+        return False
+
+def send_verification_email(email, verification_code):
+    """Отправка кода подтверждения"""
+    subject = "🎵 Код подтверждения для itired"
+    
+    body_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }}
+            .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }}
+            .code {{ font-size: 32px; font-weight: bold; text-align: center; letter-spacing: 10px; color: #667eea; margin: 30px 0; }}
+            .footer {{ text-align: center; margin-top: 30px; color: #666; font-size: 12px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🎵 itired</h1>
+                <p>Музыкальная платформа нового поколения</p>
+            </div>
+            <div class="content">
+                <h2>Ваш код подтверждения</h2>
+                <p>Используйте этот код для завершения регистрации или подтверждения действия:</p>
+                <div class="code">{verification_code}</div>
+                <p><strong>Код действителен в течение 10 минут.</strong></p>
+                <p>Если вы не запрашивали этот код, проигнорируйте это письмо.</p>
+            </div>
+            <div class="footer">
+                <p>© 2024 itired. Все права защищены.</p>
+                <p>Это письмо отправлено автоматически, пожалуйста, не отвечайте на него.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    body_text = f"Ваш код подтверждения для itired: {verification_code}\nКод действителен 10 минут."
+    
+    return send_email(email, subject, body_html, body_text)
+
+def send_welcome_email(email, username):
+    """Отправка приветственного письма"""
+    subject = "🎉 Добро пожаловать в itired!"
+    
+    body_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }}
+            .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }}
+            .feature {{ margin: 20px 0; padding: 15px; background: white; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }}
+            .footer {{ text-align: center; margin-top: 30px; color: #666; font-size: 12px; }}
+            .button {{ display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🎵 Добро пожаловать в itired!</h1>
+                <p>Привет, {username}!</p>
+            </div>
+            <div class="content">
+                <h2>Мы рады приветствовать вас на нашей музыкальной платформе!</h2>
+                
+                <div class="feature">
+                    <h3>🎧 Бесконечная музыка</h3>
+                    <p>Слушайте миллионы треков из Яндекс.Музыки, VK и других сервисов в одном месте.</p>
+                </div>
+                
+                <div class="feature">
+                    <h3>💰 Зарабатывайте монеты</h3>
+                    <p>Слушайте музыку, получайте ежедневные награды и покупайте уникальный контент в магазине.</p>
+                </div>
+                
+                <div class="feature">
+                    <h3>🎨 Кастомизируйте профиль</h3>
+                    <p>Покупайте темы, аватары, баннеры и создавайте уникальный стиль своего профиля.</p>
+                </div>
+                
+                <p style="text-align: center;">
+                    <a href="{SERVER_URL}" class="button">Начать использование</a>
+                </p>
+                
+                <p>На вашем счету уже есть 100 монет для первых покупок!</p>
+            </div>
+            <div class="footer">
+                <p>© 2024 itired. Все права защищены.</p>
+                <p>Если у вас есть вопросы, напишите нам на support@itired.com</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return send_email(email, subject, body_html)
 
 # --- Декораторы с кэшированием ---
 def cache_response(timeout=300):
@@ -57,12 +461,25 @@ def cache_response(timeout=300):
                 return f(*args, **kwargs)
             
             # Создаем ключ кэша на основе аргументов
-            cache_key = f"cache:{request.path}:{hash(frozenset(request.args.items()))}"
+            cache_key_parts = [f.__name__]
+            
+            # Добавляем user_id если есть
+            if 'user_id' in session:
+                cache_key_parts.append(str(session['user_id']))
+            
+            # Добавляем аргументы запроса
+            cache_key_parts.append(request.path)
+            cache_key_parts.append(hash(frozenset(request.args.items())))
+            
+            cache_key = f"cache:{':'.join(cache_key_parts)}"
             
             # Пробуем получить из кэша
             cached = redis_client.get(cache_key)
             if cached:
-                return jsonify(json.loads(cached))
+                try:
+                    return jsonify(json.loads(cached))
+                except:
+                    pass
             
             # Выполняем функцию
             result = f(*args, **kwargs)
@@ -127,103 +544,6 @@ def rate_limit_by_user(limit="10 per minute"):
         return get_remote_address()
     
     return key_func
-
-# --- Функции работы с файлами ---
-def save_uploaded_file(file_data, file_type='avatar'):
-    """Сохранение загруженного файла с оптимизацией"""
-    try:
-        if file_type == 'avatar':
-            folder = 'avatars'
-            max_size = (400, 400)
-        elif file_type == 'banner':
-            folder = 'banners'
-            max_size = (1200, 300)
-        else:
-            folder = 'others'
-            max_size = (800, 800)
-        
-        image = Image.open(BytesIO(file_data))
-        
-        # Конвертируем RGBA в RGB
-        if image.mode in ('RGBA', 'LA'):
-            background = Image.new('RGB', image.size, (45, 45, 45))
-            background.paste(image, mask=image.split()[-1])
-            image = background
-        elif image.mode != 'RGB':
-            image = image.convert('RGB')
-        
-        # Оптимизация размера
-        image.thumbnail(max_size, Image.Resampling.LANCZOS)
-        
-        # Генерация имени файла
-        unique_filename = f"{uuid.uuid4().hex}.jpg"
-        filepath = os.path.join(UPLOAD_FOLDER, folder, unique_filename)
-        
-        # Сохранение с оптимизацией
-        image.save(filepath, 'JPEG', quality=85, optimize=True, progressive=True)
-        
-        return f"/static/uploads/{folder}/{unique_filename}"
-    except Exception as e:
-        logger.error(f"Error saving uploaded file: {e}")
-        return None
-
-def validate_image(file_data, max_size_mb=5):
-    """Валидация изображения"""
-    try:
-        # Проверка размера
-        if len(file_data) > max_size_mb * 1024 * 1024:
-            return False, f"Размер файла превышает {max_size_mb}MB"
-        
-        # Проверка формата
-        image = Image.open(BytesIO(file_data))
-        image.verify()
-        
-        # Проверка разрешения
-        if image.size[0] > 5000 or image.size[1] > 5000:
-            return False, "Слишком большое разрешение"
-        
-        return True, "OK"
-    except Exception as e:
-        return False, f"Некорректный файл: {str(e)}"
-
-# --- Email функции ---
-def send_verification_email(email, verification_code):
-    try:
-        msg = MIMEText(f'Ваш код подтверждения: {verification_code}\nДействует 10 минут.', 'plain', 'utf-8')
-        msg['From'] = f"itired 🎵 <{EMAIL_CONFIG['email']}>"
-        msg['To'] = email
-        msg['Subject'] = '🎵 Ваш код подтверждения для itired'
-        
-        server = smtplib.SMTP(EMAIL_CONFIG['smtp_server'], EMAIL_CONFIG['smtp_port'])
-        server.starttls()
-        server.login(EMAIL_CONFIG['email'], EMAIL_CONFIG['password'])
-        server.send_message(msg)
-        server.quit()
-        
-        logger.info(f"Письмо отправлено на {email}")
-        return True
-    except Exception as e:
-        logger.error(f"Ошибка отправки письма: {e}")
-        return False
-
-def send_notification_email(email, subject, message):
-    """Отправка уведомлений"""
-    try:
-        msg = MIMEText(message, 'plain', 'utf-8')
-        msg['From'] = f"itired 🎵 <{EMAIL_CONFIG['email']}>"
-        msg['To'] = email
-        msg['Subject'] = subject
-        
-        server = smtplib.SMTP(EMAIL_CONFIG['smtp_server'], EMAIL_CONFIG['smtp_port'])
-        server.starttls()
-        server.login(EMAIL_CONFIG['email'], EMAIL_CONFIG['password'])
-        server.send_message(msg)
-        server.quit()
-        
-        return True
-    except Exception as e:
-        logger.error(f"Ошибка отправки уведомления: {e}")
-        return False
 
 # --- Музыкальные сервисы с кэшированием ---
 @lru_cache(maxsize=100)
@@ -315,7 +635,7 @@ def add_currency(user_id, amount, reason, metadata=None):
             user_id=user_id,
             amount=amount,
             reason=reason,
-            metadata=json.dumps(metadata) if metadata else None
+            transaction_metadata=json.dumps(metadata) if metadata else None
         )
         db.session.add(transaction)
         
@@ -331,7 +651,7 @@ def add_currency(user_id, amount, reason, metadata=None):
         db.session.commit()
         
         # Инвалидация кэша баланса
-        invalidate_cache(f"currency:{user_id}")
+        invalidate_cache(f"*{user_id}*")
         
         return True
     except Exception as e:
@@ -410,7 +730,7 @@ class EnhancedRecommender:
             
             for h in history:
                 try:
-                    track_data = json.loads(h.track_data)
+                    track_data = json.loads(h.track_data) if h.track_data else {}
                     if 'genre' in track_data:
                         genres[track_data['genre']] += 1
                     if 'artists' in track_data:
@@ -617,13 +937,25 @@ def log_api_request(endpoint, method, user_id=None, status_code=200, response_ti
     """Логирование API запросов"""
     try:
         from models import db, APILog
+        
+        # Ограничиваем размер данных
+        request_data = None
+        if request.is_json:
+            try:
+                data = request.get_json()
+                request_data = json.dumps(data)[:5000]  # Ограничиваем размер
+            except:
+                pass
+        
         log = APILog(
             endpoint=endpoint,
             method=method,
             user_id=user_id,
             ip_address=request.remote_addr,
             status_code=status_code,
-            response_time=response_time
+            response_time=response_time,
+            request_data=request_data,
+            user_agent=request.user_agent.string[:500]
         )
         db.session.add(log)
         db.session.commit()
@@ -634,7 +966,7 @@ def get_api_stats(timeframe='day'):
     """Статистика API запросов"""
     try:
         from models import APILog, db
-        from sqlalchemy import func
+        from sqlalchemy import func, case
         
         time_filter = {
             'hour': func.datetime('now', '-1 hour'),

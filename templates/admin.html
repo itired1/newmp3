@@ -1,0 +1,2696 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>itired 🎵 - Админ-панель</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #141414;
+            --bg-card: #1a1a1a;
+            --bg-hover: #222222;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --text-muted: #666666;
+            --accent-primary: #ff6b6b;
+            --accent-secondary: #667eea;
+            --accent-success: #51cf66;
+            --accent-warning: #ffd43b;
+            --accent-danger: #ff6b6b;
+            --border-color: #333333;
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+            --border-radius-sm: 8px;
+            --border-radius: 12px;
+            --border-radius-lg: 16px;
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .admin-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .admin-sidebar {
+            width: 280px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            padding: 2rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .admin-logo {
+            padding: 0 2rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 2rem;
+        }
+
+        .admin-logo h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .admin-logo i {
+            color: var(--accent-primary);
+            font-size: 1.8rem;
+        }
+
+        .admin-nav {
+            padding: 0 1.5rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: var(--border-radius-sm);
+            margin-bottom: 0.5rem;
+            transition: var(--transition);
+            font-weight: 500;
+        }
+
+        .nav-item i {
+            width: 20px;
+            text-align: center;
+        }
+
+        .nav-item:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .admin-footer {
+            margin-top: auto;
+            padding: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* Main content */
+        .admin-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        .section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        h1 i {
+            color: var(--accent-primary);
+        }
+
+        /* Stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .stat-card:nth-child(1) .stat-icon { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .stat-card:nth-child(2) .stat-icon { background: linear-gradient(135deg, #f093fb, #f5576c); }
+        .stat-card:nth-child(3) .stat-icon { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+        .stat-card:nth-child(4) .stat-icon { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
+        }
+
+        .stat-desc {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Tables */
+        .table-container {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .admin-table th {
+            background: var(--bg-secondary);
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .admin-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .admin-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .admin-table tr:hover {
+            background: var(--bg-hover);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--border-radius-sm);
+            border: none;
+            font-family: inherit;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #ff5252;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-hover);
+        }
+
+        .btn-success {
+            background: var(--accent-success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--accent-danger);
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            color: var(--text-primary);
+            font-family: inherit;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        /* Upload */
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent-primary);
+            background: var(--bg-hover);
+        }
+
+        .upload-area i {
+            font-size: 3rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .upload-area h3 {
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-area p {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+        }
+
+        .page-link {
+            padding: 0.5rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .page-link:hover {
+            background: var(--bg-hover);
+        }
+
+        .page-link.active {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 1rem 1.5rem;
+            border-radius: var(--border-radius-sm);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .alert-success {
+            background: rgba(81, 207, 102, 0.1);
+            border: 1px solid rgba(81, 207, 102, 0.3);
+            color: var(--accent-success);
+        }
+
+        .alert-error {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            color: var(--accent-danger);
+        }
+
+        .alert-warning {
+            background: rgba(255, 212, 59, 0.1);
+            border: 1px solid rgba(255, 212, 59, 0.3);
+            color: var(--accent-warning);
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-success {
+            background: rgba(81, 207, 102, 0.2);
+            color: var(--accent-success);
+        }
+
+        .badge-warning {
+            background: rgba(255, 212, 59, 0.2);
+            color: var(--accent-warning);
+        }
+
+        .badge-danger {
+            background: rgba(255, 107, 107, 0.2);
+            color: var(--accent-danger);
+        }
+
+        .badge-info {
+            background: rgba(102, 126, 234, 0.2);
+            color: var(--accent-secondary);
+        }
+
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .admin-sidebar {
+                width: 250px;
+            }
+            
+            .admin-content {
+                margin-left: 250px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .admin-container {
+                flex-direction: column;
+            }
+            
+            .admin-sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+                padding: 1rem 0;
+            }
+            
+            .admin-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .admin-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <div class="admin-sidebar">
+            <div class="admin-logo">
+                <h2><i class="fas fa-crown"></i> Админ-панель</h2>
+            </div>
+            
+            <nav class="admin-nav">
+                <a href="#" class="nav-item active" data-section="stats">
+                    <i class="fas fa-chart-bar"></i> Статистика
+                </a>
+                <a href="#" class="nav-item" data-section="users">
+                    <i class="fas fa-users"></i> Пользователи
+                </a>
+                <a href="#" class="nav-item" data-section="shop">
+                    <i class="fas fa-store"></i> Магазин
+                </a>
+                <a href="#" class="nav-item" data-section="banners">
+                    <i class="fas fa-image"></i> Баннеры
+                </a>
+                <a href="#" class="nav-item" data-section="bot">
+                    <i class="fab fa-telegram"></i> Telegram бот
+                </a>
+                <a href="#" class="nav-item" data-section="upload">
+                    <i class="fas fa-upload"></i> Загрузка файлов
+                </a>
+                <a href="#" class="nav-item" data-section="system">
+                    <i class="fas fa-cog"></i> Система
+                </a>
+            </nav>
+            
+            <div class="admin-footer">
+                <a href="/" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> На сайт
+                </a>
+            </div>
+        </div>
+        
+        <!-- Main content -->
+        <div class="admin-content">
+            <!-- Статистика -->
+            <div class="section active" id="stats-section">
+                <h1><i class="fas fa-chart-bar"></i> Статистика системы</h1>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Пользователи</h3>
+                            <div class="stat-value" id="stat-users">0</div>
+                            <div class="stat-desc">Всего зарегистрировано</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-store"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Товары</h3>
+                            <div class="stat-value" id="stat-items">0</div>
+                            <div class="stat-desc">В магазине</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Продажи</h3>
+                            <div class="stat-value" id="stat-sales">0</div>
+                            <div class="stat-desc">Всего продаж</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Валюта</h3>
+                            <div class="stat-value" id="stat-currency">0</div>
+                            <div class="stat-desc">В обращении</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Активность API (24ч)</h3>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-secondary" data-period="hour">Час</button>
+                            <button class="btn btn-sm btn-secondary active" data-period="day">День</button>
+                            <button class="btn btn-sm btn-secondary" data-period="week">Неделя</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="admin-table" id="api-stats-table">
+                            <thead>
+                                <tr>
+                                    <th>Эндпоинт</th>
+                                    <th>Запросы</th>
+                                    <th>Ср. время</th>
+                                    <th>Ошибки</th>
+                                </tr>
+                            </thead>
+                            <tbody id="api-stats-body">
+                                <!-- Данные загружаются через JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Управление пользователями -->
+            <div class="section" id="users-section">
+                <h1><i class="fas fa-users"></i> Управление пользователями</h1>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Список пользователей</h3>
+                        <div class="btn-group">
+                            <input type="text" class="form-control" id="user-search" placeholder="Поиск пользователей..." style="width: 300px;">
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Имя</th>
+                                    <th>Email</th>
+                                    <th>Telegram</th>
+                                    <th>Баланс</th>
+                                    <th>Дата регистрации</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                <!-- Данные загружаются через JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="users-pagination"></div>
+                </div>
+                
+                <div class="card" id="user-edit-card" style="display: none;">
+                    <div class="card-header">
+                        <h3 class="card-title">Редактирование пользователя</h3>
+                        <button class="btn btn-secondary" id="close-edit">Закрыть</button>
+                    </div>
+                    <div class="card-body">
+                        <form id="edit-user-form">
+                            <input type="hidden" id="edit-user-id">
+                            <div class="form-group">
+                                <label class="form-label">Имя пользователя</label>
+                                <input type="text" id="edit-username" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email</label>
+                                <input type="email" id="edit-email" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Отображаемое имя</label>
+                                <input type="text" id="edit-display-name" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Баланс монет</label>
+                                <input type="number" id="edit-balance" class="form-control" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Telegram ID</label>
+                                <input type="text" id="edit-telegram-id" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Роль</label>
+                                <select id="edit-role" class="form-control">
+                                    <option value="user">Пользователь</option>
+                                    <option value="admin">Администратор</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                                <button type="button" class="btn btn-danger" id="delete-user">Удалить пользователя</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Управление магазином -->
+            <div class="section" id="shop-section">
+                <h1><i class="fas fa-store"></i> Управление магазином</h1>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Товары магазина</h3>
+                        <div class="btn-group">
+                            <button class="btn btn-primary" id="add-item-btn">
+                                <i class="fas fa-plus"></i> Добавить товар
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Название</th>
+                                    <th>Тип</th>
+                                    <th>Категория</th>
+                                    <th>Цена</th>
+                                    <th>Редкость</th>
+                                    <th>Продажи</th>
+                                    <th>Статус</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="shop-items-body">
+                                <!-- Данные загружаются через JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Форма добавления/редактирования товара -->
+                <div class="card" id="item-form-card" style="display: none;">
+                    <div class="card-header">
+                        <h3 class="card-title" id="item-form-title">Добавление товара</h3>
+                        <button class="btn btn-secondary" id="close-item-form">Закрыть</button>
+                    </div>
+                    <div class="card-body">
+                        <form id="item-form">
+                            <input type="hidden" id="item-id">
+                            
+                            <div class="form-group">
+                                <label class="form-label">Название товара *</label>
+                                <input type="text" id="item-name" class="form-control" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Описание</label>
+                                <textarea id="item-description" class="form-control" rows="3"></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Тип товара *</label>
+                                <select id="item-type" class="form-control" required>
+                                    <option value="">Выберите тип</option>
+                                    <option value="theme">Тема</option>
+                                    <option value="avatar">Аватар</option>
+                                    <option value="profile_banner">Баннер профиля</option>
+                                    <option value="badge">Бейдж</option>
+                                    <option value="effect">Эффект</option>
+                                    <option value="animation">Анимация</option>
+                                    <option value="music">Музыка</option>
+                                    <option value="sticker">Стикер</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Категория *</label>
+                                <select id="item-category" class="form-control" required>
+                                    <!-- Категории загружаются через JS -->
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Цена (монеты) *</label>
+                                <input type="number" id="item-price" class="form-control" min="0" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Редкость</label>
+                                <select id="item-rarity" class="form-control">
+                                    <option value="common">Обычный</option>
+                                    <option value="rare">Редкий</option>
+                                    <option value="epic">Эпический</option>
+                                    <option value="legendary">Легендарный</option>
+                                    <option value="mythic">Мифический</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Количество на складе (-1 = бесконечно)</label>
+                                <input type="number" id="item-stock" class="form-control" value="-1" min="-1">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">URL изображения</label>
+                                <input type="text" id="item-image-url" class="form-control" placeholder="https://example.com/image.jpg">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Данные товара (JSON)</label>
+                                <textarea id="item-data" class="form-control" rows="6" placeholder='{"key": "value"}'></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Статус</label>
+                                <div>
+                                    <input type="checkbox" id="item-active" checked> Активен
+                                    <input type="checkbox" id="item-featured" style="margin-left: 20px;"> Рекомендуемый
+                                    <input type="checkbox" id="item-new" style="margin-left: 20px;"> Новинка
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary" id="save-item-btn">Сохранить товар</button>
+                                <button type="button" class="btn btn-danger" id="delete-item-btn" style="display: none;">Удалить товар</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Управление баннерами -->
+            <div class="section" id="banners-section">
+                <h1><i class="fas fa-image"></i> Управление баннерами</h1>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Баннеры</h3>
+                        <div class="btn-group">
+                            <button class="btn btn-primary" id="add-banner-btn">
+                                <i class="fas fa-plus"></i> Добавить баннер
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Название</th>
+                                    <th>Изображение</th>
+                                    <th>Цена</th>
+                                    <th>Редкость</th>
+                                    <th>Статус</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="banners-body">
+                                <!-- Данные загружаются через JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Форма баннера -->
+                <div class="card" id="banner-form-card" style="display: none;">
+                    <div class="card-header">
+                        <h3 class="card-title" id="banner-form-title">Добавление баннера</h3>
+                        <button class="btn btn-secondary" id="close-banner-form">Закрыть</button>
+                    </div>
+                    <div class="card-body">
+                        <form id="banner-form">
+                            <input type="hidden" id="banner-id">
+                            
+                            <div class="form-group">
+                                <label class="form-label">Название баннера *</label>
+                                <input type="text" id="banner-name" class="form-control" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Описание</label>
+                                <textarea id="banner-description" class="form-control" rows="3"></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">URL изображения *</label>
+                                <input type="text" id="banner-image-url" class="form-control" required placeholder="https://example.com/banner.jpg">
+                                <small class="text-muted">Можно использовать прямую ссылку или загрузить файл ниже</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">URL превью</label>
+                                <input type="text" id="banner-preview-url" class="form-control" placeholder="https://example.com/preview.jpg">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Цена (монеты)</label>
+                                <input type="number" id="banner-price" class="form-control" min="0" value="0">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Редкость</label>
+                                <select id="banner-rarity" class="form-control">
+                                    <option value="common">Обычный</option>
+                                    <option value="rare">Редкий</option>
+                                    <option value="epic">Эпический</option>
+                                    <option value="legendary">Легендарный</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Категория</label>
+                                <input type="text" id="banner-category" class="form-control" placeholder="Например: аниме, природа, космос">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Теги (через запятую)</label>
+                                <input type="text" id="banner-tags" class="form-control" placeholder="тег1, тег2, тег3">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Статус</label>
+                                <div>
+                                    <input type="checkbox" id="banner-active" checked> Активен
+                                    <input type="checkbox" id="banner-featured" style="margin-left: 20px;"> Рекомендуемый
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary" id="save-banner-btn">Сохранить баннер</button>
+                                <button type="button" class="btn btn-danger" id="delete-banner-btn" style="display: none;">Удалить баннер</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Управление Telegram ботом -->
+            <div class="section" id="bot-section">
+                <h1><i class="fab fa-telegram"></i> Управление Telegram ботом</h1>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fab fa-telegram"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Статус бота</h3>
+                            <div class="stat-value" id="bot-status">Загрузка...</div>
+                            <div class="stat-desc" id="bot-details"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Пользователи</h3>
+                            <div class="stat-value" id="bot-users">0</div>
+                            <div class="stat-desc">С привязанным Telegram</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Активные коды</h3>
+                            <div class="stat-value" id="active-codes">0</div>
+                            <div class="stat-desc">Для регистрации/привязки</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Уведомления</h3>
+                            <div class="stat-value" id="notifications-sent">0</div>
+                            <div class="stat-desc">Отправлено за сегодня</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Управление ботом</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">Токен бота</label>
+                            <input type="text" id="bot-token" class="form-control" value="********" disabled>
+                            <small class="text-muted">Настраивается через переменные окружения</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">URL сервера</label>
+                            <input type="text" id="server-url" class="form-control" value="http://localhost:5001">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Автозапуск бота</label>
+                            <select id="bot-auto-start" class="form-control">
+                                <option value="true">Включен</option>
+                                <option value="false">Отключен</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <button class="btn btn-primary" id="restart-bot-btn">
+                                <i class="fas fa-sync-alt"></i> Перезапустить бота
+                            </button>
+                            <button class="btn btn-secondary" id="test-bot-btn">
+                                <i class="fas fa-vial"></i> Тест бота
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Тестовая отправка сообщения</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="test-message-form">
+                            <div class="form-group">
+                                <label class="form-label">Telegram ID получателя</label>
+                                <input type="text" id="test-telegram-id" class="form-control" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Сообщение</label>
+                                <textarea id="test-message" class="form-control" rows="4" required placeholder="Тестовое сообщение..."></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane"></i> Отправить тестовое сообщение
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Загрузка файлов -->
+            <div class="section" id="upload-section">
+                <h1><i class="fas fa-upload"></i> Загрузка файлов</h1>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Загрузка нового файла</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="upload-area" id="upload-area">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <h3>Перетащите файлы сюда</h3>
+                            <p>или нажмите для выбора файлов</p>
+                            <p class="text-muted">Поддерживаемые форматы: PNG, JPG, GIF, WEBP, SVG, MP3, WAV, OGG, MP4</p>
+                            <p class="text-muted">Максимальный размер: 16MB</p>
+                            <input type="file" id="file-input" style="display: none;" accept=".png,.jpg,.jpeg,.gif,.webp,.svg,.mp3,.wav,.ogg,.mp4">
+                        </div>
+                        
+                        <div class="form-group" style="margin-top: 2rem;">
+                            <label class="form-label">Тип файла</label>
+                            <select id="upload-type" class="form-control">
+                                <option value="avatar">Аватар</option>
+                                <option value="banner">Баннер</option>
+                                <option value="shop_item">Товар магазина</option>
+                                <option value="music_cover">Обложка музыки</option>
+                                <option value="other">Другое</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Название файла (опционально)</label>
+                            <input type="text" id="upload-filename" class="form-control" placeholder="Мой файл.jpg">
+                        </div>
+                        
+                        <div class="form-group">
+                            <button class="btn btn-primary" id="upload-btn" disabled>
+                                <i class="fas fa-upload"></i> Начать загрузку
+                            </button>
+                            <div class="progress" style="margin-top: 1rem; display: none;" id="upload-progress">
+                                <div class="progress-bar" style="width: 0%; height: 20px; background: var(--accent-primary); border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Недавно загруженные файлы</h3>
+                    </div>
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Имя файла</th>
+                                    <th>Тип</th>
+                                    <th>Размер</th>
+                                    <th>URL</th>
+                                    <th>Дата</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="uploaded-files-body">
+                                <!-- Данные загружаются через JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Система -->
+            <div class="section" id="system-section">
+                <h1><i class="fas fa-cog"></i> Система</h1>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>База данных</h3>
+                            <div class="stat-value" id="db-status">Онлайн</div>
+                            <div class="stat-desc">SQLite</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Redis</h3>
+                            <div class="stat-value" id="redis-status">Офлайн</div>
+                            <div class="stat-desc">Кэширование</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-server"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Память</h3>
+                            <div class="stat-value" id="memory-usage">0%</div>
+                            <div class="stat-desc">Использование</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Время работы</h3>
+                            <div class="stat-value" id="uptime">0ч</div>
+                            <div class="stat-desc">Сервера</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Очистка системы</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <button class="btn btn-warning" id="clear-cache-btn">
+                                <i class="fas fa-trash"></i> Очистить кэш
+                            </button>
+                            <small class="text-muted" style="margin-left: 1rem;">Удаляет все кэшированные данные</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <button class="btn btn-warning" id="clear-old-codes-btn">
+                                <i class="fas fa-hourglass-end"></i> Очистить старые коды
+                            </button>
+                            <small class="text-muted" style="margin-left: 1rem;">Удаляет просроченные коды Telegram</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <button class="btn btn-danger" id="reset-shop-btn">
+                                <i class="fas fa-store-slash"></i> Сбросить магазин
+                            </button>
+                            <small class="text-muted" style="margin-left: 1rem;">Восстанавливает стандартные товары</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Логи системы</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <textarea class="form-control" id="system-logs" rows="10" readonly style="font-family: monospace; font-size: 12px;"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <button class="btn btn-secondary" id="refresh-logs-btn">
+                                <i class="fas fa-sync-alt"></i> Обновить логи
+                            </button>
+                            <button class="btn btn-secondary" id="clear-logs-btn">
+                                <i class="fas fa-trash"></i> Очистить логи
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+    </div>
+    
+    <script>
+        // Глобальные переменные
+        let currentPage = 1;
+        let itemsPerPage = 20;
+        let currentSection = 'stats';
+        let selectedFile = null;
+        
+        // DOM элементы
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const navItems = document.querySelectorAll('.nav-item');
+        const sections = document.querySelectorAll('.section');
+        
+        // Показать/скрыть loading
+        function showLoading() {
+            loadingOverlay.style.display = 'flex';
+        }
+        
+        function hideLoading() {
+            loadingOverlay.style.display = 'none';
+        }
+        
+        // Показать сообщение
+        function showMessage(message, type = 'success') {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            document.querySelector('.admin-content').insertBefore(alert, document.querySelector('.section.active h1').nextSibling);
+            
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+        
+        // Переключение секций
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                
+                const section = item.dataset.section;
+                if (currentSection === section) return;
+                
+                // Обновляем активный элемент навигации
+                navItems.forEach(nav => nav.classList.remove('active'));
+                item.classList.add('active');
+                
+                // Скрываем текущую секцию
+                sections.forEach(sec => {
+                    sec.classList.remove('active');
+                    if (sec.id === `${section}-section`) {
+                        sec.classList.add('active');
+                        currentSection = section;
+                    }
+                });
+                
+                // Загружаем данные для новой секции
+                loadSectionData(section);
+            });
+        });
+        
+        // Загрузка данных для секции
+        async function loadSectionData(section) {
+            showLoading();
+            
+            try {
+                switch(section) {
+                    case 'stats':
+                        await loadStats();
+                        break;
+                    case 'users':
+                        await loadUsers();
+                        break;
+                    case 'shop':
+                        await loadShopItems();
+                        await loadCategories();
+                        break;
+                    case 'banners':
+                        await loadBanners();
+                        break;
+                    case 'bot':
+                        await loadBotStatus();
+                        break;
+                    case 'upload':
+                        await loadUploadedFiles();
+                        break;
+                    case 'system':
+                        await loadSystemInfo();
+                        break;
+                }
+            } catch (error) {
+                console.error('Error loading section data:', error);
+                showMessage('Ошибка загрузки данных', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // === СТАТИСТИКА ===
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/admin/stats');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Обновляем статистику
+                    document.getElementById('stat-users').textContent = data.users.total;
+                    document.getElementById('stat-items').textContent = data.shop.total_items;
+                    document.getElementById('stat-sales').textContent = data.shop.total_sales;
+                    document.getElementById('stat-currency').textContent = data.currency.total_in_circulation;
+                    
+                    // Загружаем статистику API
+                    await loadApiStats('day');
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+        
+        async function loadApiStats(period) {
+            try {
+                const response = await fetch(`/api/admin/api_stats?period=${period}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const tbody = document.getElementById('api-stats-body');
+                    tbody.innerHTML = '';
+                    
+                    data.forEach(stat => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${stat.endpoint}</td>
+                            <td>${stat.count}</td>
+                            <td>${stat.avg_time.toFixed(2)}ms</td>
+                            <td><span class="badge ${stat.errors > 0 ? 'badge-danger' : 'badge-success'}">${stat.errors}</span></td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading API stats:', error);
+            }
+        }
+        
+        // === ПОЛЬЗОВАТЕЛИ ===
+        async function loadUsers(page = 1) {
+            try {
+                const response = await fetch(`/api/admin/users?page=${page}&per_page=${itemsPerPage}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const tbody = document.getElementById('users-table-body');
+                    tbody.innerHTML = '';
+                    
+                    data.users.forEach(user => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${user.id}</td>
+                            <td>
+                                <strong>${user.username}</strong>
+                                ${user.is_admin ? '<span class="badge badge-danger" style="margin-left: 5px;">ADMIN</span>' : ''}
+                            </td>
+                            <td>${user.email}</td>
+                            <td>${user.telegram_linked ? '✅' : '❌'}</td>
+                            <td>${user.balance}</td>
+                            <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                            <td>
+                                <button class="btn btn-sm btn-secondary edit-user" data-id="${user.id}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger delete-user" data-id="${user.id}" ${user.is_admin ? 'disabled' : ''}>
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    
+                    // Обновляем пагинацию
+                    updatePagination('users-pagination', data.pages, page);
+                    
+                    // Добавляем обработчики событий
+                    addUserEventListeners();
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+        
+        function addUserEventListeners() {
+            // Редактирование пользователя
+            document.querySelectorAll('.edit-user').forEach(btn => {
+                btn.addEventListener('click', () => editUser(btn.dataset.id));
+            });
+            
+            // Удаление пользователя
+            document.querySelectorAll('.delete-user').forEach(btn => {
+                btn.addEventListener('click', () => deleteUser(btn.dataset.id));
+            });
+            
+            // Поиск пользователей
+            const searchInput = document.getElementById('user-search');
+            if (searchInput) {
+                searchInput.addEventListener('input', debounce(() => {
+                    searchUsers(searchInput.value);
+                }, 300));
+            }
+            
+            // Закрытие формы редактирования
+            const closeEditBtn = document.getElementById('close-edit');
+            if (closeEditBtn) {
+                closeEditBtn.addEventListener('click', () => {
+                    document.getElementById('user-edit-card').style.display = 'none';
+                });
+            }
+            
+            // Сохранение изменений пользователя
+            const editForm = document.getElementById('edit-user-form');
+            if (editForm) {
+                editForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    await saveUserChanges();
+                });
+            }
+            
+            // Удаление пользователя
+            const deleteBtn = document.getElementById('delete-user');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', async () => {
+                    const userId = document.getElementById('edit-user-id').value;
+                    if (confirm(`Удалить пользователя ${userId}?`)) {
+                        await deleteUser(userId);
+                    }
+                });
+            }
+        }
+        
+        async function editUser(userId) {
+            try {
+                showLoading();
+                const response = await fetch(`/api/admin/users/${userId}`);
+                const user = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('edit-user-id').value = user.id;
+                    document.getElementById('edit-username').value = user.username;
+                    document.getElementById('edit-email').value = user.email;
+                    document.getElementById('edit-display-name').value = user.display_name || '';
+                    document.getElementById('edit-balance').value = user.balance;
+                    document.getElementById('edit-telegram-id').value = user.telegram_id || '';
+                    document.getElementById('edit-role').value = user.is_admin ? 'admin' : 'user';
+                    
+                    document.getElementById('user-edit-card').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error loading user:', error);
+                showMessage('Ошибка загрузки пользователя', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function saveUserChanges() {
+            const userId = document.getElementById('edit-user-id').value;
+            const userData = {
+                username: document.getElementById('edit-username').value,
+                email: document.getElementById('edit-email').value,
+                display_name: document.getElementById('edit-display-name').value,
+                balance: parseInt(document.getElementById('edit-balance').value),
+                telegram_id: document.getElementById('edit-telegram-id').value,
+                is_admin: document.getElementById('edit-role').value === 'admin'
+            };
+            
+            try {
+                showLoading();
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
+                
+                if (response.ok) {
+                    showMessage('Пользователь обновлен');
+                    loadUsers(currentPage);
+                    document.getElementById('user-edit-card').style.display = 'none';
+                } else {
+                    const error = await response.json();
+                    showMessage(error.error || 'Ошибка обновления', 'error');
+                }
+            } catch (error) {
+                console.error('Error saving user:', error);
+                showMessage('Ошибка сохранения', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function deleteUser(userId) {
+            if (!confirm(`Вы уверены, что хотите удалить пользователя ${userId}?`)) {
+                return;
+            }
+            
+            try {
+                showLoading();
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showMessage('Пользователь удален');
+                    loadUsers(currentPage);
+                    document.getElementById('user-edit-card').style.display = 'none';
+                } else {
+                    const error = await response.json();
+                    showMessage(error.error || 'Ошибка удаления', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                showMessage('Ошибка удаления', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function searchUsers(query) {
+            if (!query.trim()) {
+                loadUsers();
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/admin/users/search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const tbody = document.getElementById('users-table-body');
+                    tbody.innerHTML = '';
+                    
+                    data.forEach(user => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${user.id}</td>
+                            <td>${user.username} ${user.is_admin ? '<span class="badge badge-danger">ADMIN</span>' : ''}</td>
+                            <td>${user.email}</td>
+                            <td>${user.telegram_linked ? '✅' : '❌'}</td>
+                            <td>${user.balance}</td>
+                            <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                            <td>
+                                <button class="btn btn-sm btn-secondary edit-user" data-id="${user.id}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger delete-user" data-id="${user.id}" ${user.is_admin ? 'disabled' : ''}>
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    
+                    addUserEventListeners();
+                }
+            } catch (error) {
+                console.error('Error searching users:', error);
+            }
+        }
+        
+        // === МАГАЗИН ===
+        async function loadShopItems() {
+            try {
+                const response = await fetch('/api/admin/shop/items');
+                const items = await response.json();
+                
+                if (response.ok) {
+                    const tbody = document.getElementById('shop-items-body');
+                    tbody.innerHTML = '';
+                    
+                    items.forEach(item => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${item.id}</td>
+                            <td>${item.name}</td>
+                            <td><span class="badge badge-info">${item.type}</span></td>
+                            <td>${item.category_name}</td>
+                            <td>${item.price}</td>
+                            <td><span class="badge ${getRarityClass(item.rarity)}">${item.rarity}</span></td>
+                            <td>${item.sales_count}</td>
+                            <td>${item.is_active ? '<span class="badge badge-success">Активен</span>' : '<span class="badge badge-danger">Неактивен</span>'}</td>
+                            <td>
+                                <button class="btn btn-sm btn-secondary edit-item" data-id="${item.id}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger delete-item" data-id="${item.id}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    
+                    addShopEventListeners();
+                }
+            } catch (error) {
+                console.error('Error loading shop items:', error);
+            }
+        }
+        
+        async function loadCategories() {
+            try {
+                const response = await fetch('/api/admin/shop/categories');
+                const categories = await response.json();
+                
+                if (response.ok) {
+                    const select = document.getElementById('item-category');
+                    select.innerHTML = '<option value="">Выберите категорию</option>';
+                    
+                    categories.forEach(cat => {
+                        const option = document.createElement('option');
+                        option.value = cat.id;
+                        option.textContent = cat.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading categories:', error);
+            }
+        }
+        
+        function addShopEventListeners() {
+            // Добавление товара
+            const addBtn = document.getElementById('add-item-btn');
+            if (addBtn) {
+                addBtn.addEventListener('click', () => {
+                    document.getElementById('item-form-title').textContent = 'Добавление товара';
+                    document.getElementById('item-form-card').style.display = 'block';
+                    resetItemForm();
+                });
+            }
+            
+            // Закрытие формы
+            const closeBtn = document.getElementById('close-item-form');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    document.getElementById('item-form-card').style.display = 'none';
+                });
+            }
+            
+            // Редактирование товара
+            document.querySelectorAll('.edit-item').forEach(btn => {
+                btn.addEventListener('click', () => editItem(btn.dataset.id));
+            });
+            
+            // Удаление товара
+            document.querySelectorAll('.delete-item').forEach(btn => {
+                btn.addEventListener('click', () => deleteItem(btn.dataset.id));
+            });
+            
+            // Сохранение товара
+            const itemForm = document.getElementById('item-form');
+            if (itemForm) {
+                itemForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    await saveItem();
+                });
+            }
+            
+            // Удаление товара из формы
+            const deleteItemBtn = document.getElementById('delete-item-btn');
+            if (deleteItemBtn) {
+                deleteItemBtn.addEventListener('click', async () => {
+                    const itemId = document.getElementById('item-id').value;
+                    if (itemId && confirm('Удалить этот товар?')) {
+                        await deleteItem(itemId);
+                    }
+                });
+            }
+        }
+        
+        function resetItemForm() {
+            document.getElementById('item-id').value = '';
+            document.getElementById('item-name').value = '';
+            document.getElementById('item-description').value = '';
+            document.getElementById('item-type').value = '';
+            document.getElementById('item-price').value = '';
+            document.getElementById('item-rarity').value = 'common';
+            document.getElementById('item-stock').value = '-1';
+            document.getElementById('item-image-url').value = '';
+            document.getElementById('item-data').value = '';
+            document.getElementById('item-active').checked = true;
+            document.getElementById('item-featured').checked = false;
+            document.getElementById('item-new').checked = false;
+            document.getElementById('delete-item-btn').style.display = 'none';
+        }
+        
+        async function editItem(itemId) {
+            try {
+                showLoading();
+                const response = await fetch(`/api/admin/shop/items/${itemId}`);
+                const item = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('item-form-title').textContent = 'Редактирование товара';
+                    document.getElementById('item-form-card').style.display = 'block';
+                    
+                    document.getElementById('item-id').value = item.id;
+                    document.getElementById('item-name').value = item.name;
+                    document.getElementById('item-description').value = item.description || '';
+                    document.getElementById('item-type').value = item.type;
+                    document.getElementById('item-category').value = item.category_id;
+                    document.getElementById('item-price').value = item.price;
+                    document.getElementById('item-rarity').value = item.rarity;
+                    document.getElementById('item-stock').value = item.stock;
+                    document.getElementById('item-image-url').value = item.image_url || '';
+                    document.getElementById('item-data').value = JSON.stringify(item.data, null, 2);
+                    document.getElementById('item-active').checked = item.is_active;
+                    document.getElementById('item-featured').checked = item.is_featured;
+                    document.getElementById('item-new').checked = item.is_new;
+                    document.getElementById('delete-item-btn').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error loading item:', error);
+                showMessage('Ошибка загрузки товара', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function saveItem() {
+            const itemId = document.getElementById('item-id').value;
+            const itemData = {
+                name: document.getElementById('item-name').value,
+                description: document.getElementById('item-description').value,
+                type: document.getElementById('item-type').value,
+                category_id: parseInt(document.getElementById('item-category').value),
+                price: parseInt(document.getElementById('item-price').value),
+                rarity: document.getElementById('item-rarity').value,
+                stock: parseInt(document.getElementById('item-stock').value),
+                image_url: document.getElementById('item-image-url').value,
+                data: document.getElementById('item-data').value ? JSON.parse(document.getElementById('item-data').value) : {},
+                is_active: document.getElementById('item-active').checked,
+                is_featured: document.getElementById('item-featured').checked,
+                is_new: document.getElementById('item-new').checked
+            };
+            
+            try {
+                showLoading();
+                const url = itemId ? `/api/admin/shop/items/${itemId}` : '/api/admin/shop/items';
+                const method = itemId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(itemData)
+                });
+                
+                if (response.ok) {
+                    showMessage(itemId ? 'Товар обновлен' : 'Товар создан');
+                    loadShopItems();
+                    document.getElementById('item-form-card').style.display = 'none';
+                } else {
+                    const error = await response.json();
+                    showMessage(error.error || 'Ошибка сохранения', 'error');
+                }
+            } catch (error) {
+                console.error('Error saving item:', error);
+                showMessage('Ошибка сохранения', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function deleteItem(itemId) {
+            if (!confirm('Удалить этот товар?')) {
+                return;
+            }
+            
+            try {
+                showLoading();
+                const response = await fetch(`/api/admin/shop/items/${itemId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showMessage('Товар удален');
+                    loadShopItems();
+                    document.getElementById('item-form-card').style.display = 'none';
+                } else {
+                    const error = await response.json();
+                    showMessage(error.error || 'Ошибка удаления', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting item:', error);
+                showMessage('Ошибка удаления', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // === БАННЕРЫ ===
+        async function loadBanners() {
+            try {
+                const response = await fetch('/api/admin/banners');
+                const banners = await response.json();
+                
+                if (response.ok) {
+                    const tbody = document.getElementById('banners-body');
+                    tbody.innerHTML = '';
+                    
+                    banners.forEach(banner => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${banner.id}</td>
+                            <td>${banner.name}</td>
+                            <td><img src="${banner.image_url}" alt="${banner.name}" style="width: 100px; height: 50px; object-fit: cover; border-radius: 4px;"></td>
+                            <td>${banner.price}</td>
+                            <td><span class="badge ${getRarityClass(banner.rarity)}">${banner.rarity}</span></td>
+                            <td>${banner.is_active ? '<span class="badge badge-success">Активен</span>' : '<span class="badge badge-danger">Неактивен</span>'}</td>
+                            <td>
+                                <button class="btn btn-sm btn-secondary edit-banner" data-id="${banner.id}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger delete-banner" data-id="${banner.id}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    
+                    addBannerEventListeners();
+                }
+            } catch (error) {
+                console.error('Error loading banners:', error);
+            }
+        }
+        
+        function addBannerEventListeners() {
+            // Добавление баннера
+            const addBtn = document.getElementById('add-banner-btn');
+            if (addBtn) {
+                addBtn.addEventListener('click', () => {
+                    document.getElementById('banner-form-title').textContent = 'Добавление баннера';
+                    document.getElementById('banner-form-card').style.display = 'block';
+                    resetBannerForm();
+                });
+            }
+            
+            // Закрытие формы
+            const closeBtn = document.getElementById('close-banner-form');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    document.getElementById('banner-form-card').style.display = 'none';
+                });
+            }
+            
+            // Редактирование баннера
+            document.querySelectorAll('.edit-banner').forEach(btn => {
+                btn.addEventListener('click', () => editBanner(btn.dataset.id));
+            });
+            
+            // Удаление баннера
+            document.querySelectorAll('.delete-banner').forEach(btn => {
+                btn.addEventListener('click', () => deleteBanner(btn.dataset.id));
+            });
+            
+            // Сохранение баннера
+            const bannerForm = document.getElementById('banner-form');
+            if (bannerForm) {
+                bannerForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    await saveBanner();
+                });
+            }
+            
+            // Удаление баннера из формы
+            const deleteBannerBtn = document.getElementById('delete-banner-btn');
+            if (deleteBannerBtn) {
+                deleteBannerBtn.addEventListener('click', async () => {
+                    const bannerId = document.getElementById('banner-id').value;
+                    if (bannerId && confirm('Удалить этот баннер?')) {
+                        await deleteBanner(bannerId);
+                    }
+                });
+            }
+        }
+        
+        function resetBannerForm() {
+            document.getElementById('banner-id').value = '';
+            document.getElementById('banner-name').value = '';
+            document.getElementById('banner-description').value = '';
+            document.getElementById('banner-image-url').value = '';
+            document.getElementById('banner-preview-url').value = '';
+            document.getElementById('banner-price').value = '0';
+            document.getElementById('banner-rarity').value = 'common';
+            document.getElementById('banner-category').value = '';
+            document.getElementById('banner-tags').value = '';
+            document.getElementById('banner-active').checked = true;
+            document.getElementById('banner-featured').checked = false;
+            document.getElementById('delete-banner-btn').style.display = 'none';
+        }
+        
+        async function editBanner(bannerId) {
+            try {
+                showLoading();
+                const response = await fetch(`/api/admin/banners/${bannerId}`);
+                const banner = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('banner-form-title').textContent = 'Редактирование баннера';
+                    document.getElementById('banner-form-card').style.display = 'block';
+                    
+                    document.getElementById('banner-id').value = banner.id;
+                    document.getElementById('banner-name').value = banner.name;
+                    document.getElementById('banner-description').value = banner.description || '';
+                    document.getElementById('banner-image-url').value = banner.image_url;
+                    document.getElementById('banner-preview-url').value = banner.preview_url || '';
+                    document.getElementById('banner-price').value = banner.price;
+                    document.getElementById('banner-rarity').value = banner.rarity;
+                    document.getElementById('banner-category').value = banner.category || '';
+                    document.getElementById('banner-tags').value = banner.tags ? banner.tags.join(', ') : '';
+                    document.getElementById('banner-active').checked = banner.is_active;
+                    document.getElementById('banner-featured').checked = banner.is_featured || false;
+                    document.getElementById('delete-banner-btn').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error loading banner:', error);
+                showMessage('Ошибка загрузки баннера', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function saveBanner() {
+            const bannerId = document.getElementById('banner-id').value;
+            const bannerData = {
+                name: document.getElementById('banner-name').value,
+                description: document.getElementById('banner-description').value,
+                image_url: document.getElementById('banner-image-url').value,
+                preview_url: document.getElementById('banner-preview-url').value || document.getElementById('banner-image-url').value,
+                price: parseInt(document.getElementById('banner-price').value),
+                rarity: document.getElementById('banner-rarity').value,
+                category: document.getElementById('banner-category').value,
+                tags: document.getElementById('banner-tags').value ? document.getElementById('banner-tags').value.split(',').map(tag => tag.trim()) : [],
+                is_active: document.getElementById('banner-active').checked,
+                is_featured: document.getElementById('banner-featured').checked
+            };
+            
+            try {
+                showLoading();
+                const url = bannerId ? `/api/admin/banners/${bannerId}` : '/api/admin/banners';
+                const method = bannerId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(bannerData)
+                });
+                
+                if (response.ok) {
+                    showMessage(bannerId ? 'Баннер обновлен' : 'Баннер создан');
+                    loadBanners();
+                    document.getElementById('banner-form-card').style.display = 'none';
+                } else {
+                    const error = await response.json();
+                    showMessage(error.error || 'Ошибка сохранения', 'error');
+                }
+            } catch (error) {
+                console.error('Error saving banner:', error);
+                showMessage('Ошибка сохранения', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function deleteBanner(bannerId) {
+            if (!confirm('Удалить этот баннер?')) {
+                return;
+            }
+            
+            try {
+                showLoading();
+                const response = await fetch(`/api/admin/banners/${bannerId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showMessage('Баннер удален');
+                    loadBanners();
+                    document.getElementById('banner-form-card').style.display = 'none';
+                } else {
+                    const error = await response.json();
+                    showMessage(error.error || 'Ошибка удаления', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting banner:', error);
+                showMessage('Ошибка удаления', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // === TELEGRAM БОТ ===
+        async function loadBotStatus() {
+            try {
+                const response = await fetch('/api/admin/bot/status');
+                const status = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('bot-status').textContent = status.running ? '✅ Работает' : '❌ Остановлен';
+                    document.getElementById('bot-details').textContent = status.token_set ? 'Токен настроен' : 'Токен не настроен';
+                    
+                    document.getElementById('bot-token').value = status.token_set ? '********' : 'Не настроен';
+                    document.getElementById('server-url').value = status.server_url || 'http://localhost:5001';
+                    document.getElementById('bot-auto-start').value = status.auto_start.toString();
+                    
+                    // Получаем статистику бота
+                    await loadBotStats();
+                }
+            } catch (error) {
+                console.error('Error loading bot status:', error);
+            }
+        }
+        
+        async function loadBotStats() {
+            try {
+                const response = await fetch('/api/admin/bot/stats');
+                const stats = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('bot-users').textContent = stats.telegram_users || 0;
+                    document.getElementById('active-codes').textContent = stats.active_codes || 0;
+                    document.getElementById('notifications-sent').textContent = stats.notifications_today || 0;
+                }
+            } catch (error) {
+                console.error('Error loading bot stats:', error);
+            }
+        }
+        
+        function addBotEventListeners() {
+            // Перезапуск бота
+            const restartBtn = document.getElementById('restart-bot-btn');
+            if (restartBtn) {
+                restartBtn.addEventListener('click', async () => {
+                    if (confirm('Перезапустить Telegram бота?')) {
+                        try {
+                            showLoading();
+                            const response = await fetch('/api/admin/bot/restart', {
+                                method: 'POST'
+                            });
+                            
+                            const result = await response.json();
+                            if (result.success) {
+                                showMessage('Бот перезапущен');
+                                setTimeout(() => loadBotStatus(), 2000);
+                            } else {
+                                showMessage(result.message || 'Ошибка перезапуска', 'error');
+                            }
+                        } catch (error) {
+                            console.error('Error restarting bot:', error);
+                            showMessage('Ошибка перезапуска', 'error');
+                        } finally {
+                            hideLoading();
+                        }
+                    }
+                });
+            }
+            
+            // Тест бота
+            const testBtn = document.getElementById('test-bot-btn');
+            if (testBtn) {
+                testBtn.addEventListener('click', async () => {
+                    const telegramId = prompt('Введите Telegram ID для теста:');
+                    if (telegramId) {
+                        const message = '✅ Тестовое сообщение от админ-панели itired';
+                        await sendTestMessage(telegramId, message);
+                    }
+                });
+            }
+            
+            // Тестовая отправка сообщения
+            const testForm = document.getElementById('test-message-form');
+            if (testForm) {
+                testForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const telegramId = document.getElementById('test-telegram-id').value;
+                    const message = document.getElementById('test-message').value;
+                    await sendTestMessage(telegramId, message);
+                });
+            }
+            
+            // Обновление настроек
+            const serverUrlInput = document.getElementById('server-url');
+            if (serverUrlInput) {
+                serverUrlInput.addEventListener('change', async () => {
+                    await updateBotSettings();
+                });
+            }
+            
+            const autoStartSelect = document.getElementById('bot-auto-start');
+            if (autoStartSelect) {
+                autoStartSelect.addEventListener('change', async () => {
+                    await updateBotSettings();
+                });
+            }
+        }
+        
+        async function sendTestMessage(telegramId, message) {
+            try {
+                showLoading();
+                const response = await fetch('/api/admin/bot/test_message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        telegram_id: telegramId,
+                        message: message
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    showMessage('Сообщение отправлено');
+                } else {
+                    showMessage(result.message || 'Ошибка отправки', 'error');
+                }
+            } catch (error) {
+                console.error('Error sending test message:', error);
+                showMessage('Ошибка отправки', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function updateBotSettings() {
+            try {
+                const settings = {
+                    server_url: document.getElementById('server-url').value,
+                    auto_start: document.getElementById('bot-auto-start').value === 'true'
+                };
+                
+                const response = await fetch('/api/admin/bot/settings', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+                
+                if (response.ok) {
+                    showMessage('Настройки обновлены');
+                }
+            } catch (error) {
+                console.error('Error updating bot settings:', error);
+            }
+        }
+        
+        // === ЗАГРУЗКА ФАЙЛОВ ===
+        function addUploadEventListeners() {
+            const uploadArea = document.getElementById('upload-area');
+            const fileInput = document.getElementById('file-input');
+            const uploadBtn = document.getElementById('upload-btn');
+            
+            // Клик по области загрузки
+            uploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            // Drag & drop
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = 'var(--accent-primary)';
+                uploadArea.style.background = 'var(--bg-hover)';
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.borderColor = 'var(--border-color)';
+                uploadArea.style.background = '';
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = 'var(--border-color)';
+                uploadArea.style.background = '';
+                
+                if (e.dataTransfer.files.length > 0) {
+                    handleFileSelect(e.dataTransfer.files[0]);
+                }
+            });
+            
+            // Выбор файла через input
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFileSelect(e.target.files[0]);
+                }
+            });
+            
+            // Кнопка загрузки
+            uploadBtn.addEventListener('click', async () => {
+                if (!selectedFile) {
+                    showMessage('Выберите файл для загрузки', 'error');
+                    return;
+                }
+                
+                await uploadFile();
+            });
+        }
+        
+        function handleFileSelect(file) {
+            selectedFile = file;
+            
+            // Проверка размера файла (16MB)
+            if (file.size > 16 * 1024 * 1024) {
+                showMessage('Файл слишком большой (макс. 16MB)', 'error');
+                selectedFile = null;
+                return;
+            }
+            
+            // Проверка расширения файла
+            const ext = file.name.split('.').pop().toLowerCase();
+            const allowedExts = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'mp3', 'wav', 'ogg', 'mp4'];
+            
+            if (!allowedExts.includes(ext)) {
+                showMessage('Неподдерживаемый формат файла', 'error');
+                selectedFile = null;
+                return;
+            }
+            
+            // Обновляем интерфейс
+            document.getElementById('upload-filename').value = file.name;
+            document.getElementById('upload-btn').disabled = false;
+            
+            // Показываем информацию о файле
+            const fileSize = (file.size / 1024 / 1024).toFixed(2);
+            showMessage(`Выбран файл: ${file.name} (${fileSize} MB)`, 'success');
+        }
+        
+        async function uploadFile() {
+            if (!selectedFile) return;
+            
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('type', document.getElementById('upload-type').value);
+            formData.append('filename', document.getElementById('upload-filename').value || selectedFile.name);
+            
+            try {
+                showLoading();
+                const progressBar = document.querySelector('.progress-bar');
+                const progressContainer = document.getElementById('upload-progress');
+                
+                progressContainer.style.display = 'block';
+                progressBar.style.width = '0%';
+                
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/api/admin/upload');
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable) {
+                        const percentComplete = (e.loaded / e.total) * 100;
+                        progressBar.style.width = percentComplete + '%';
+                    }
+                };
+                
+                xhr.onload = () => {
+                    if (xhr.status === 200) {
+                        const result = JSON.parse(xhr.response);
+                        if (result.success) {
+                            showMessage('Файл успешно загружен: ' + result.url);
+                            loadUploadedFiles();
+                            resetUploadForm();
+                        } else {
+                            showMessage(result.message || 'Ошибка загрузки', 'error');
+                        }
+                    } else {
+                        showMessage('Ошибка загрузки файла', 'error');
+                    }
+                    progressContainer.style.display = 'none';
+                    hideLoading();
+                };
+                
+                xhr.onerror = () => {
+                    showMessage('Ошибка сети при загрузке файла', 'error');
+                    progressContainer.style.display = 'none';
+                    hideLoading();
+                };
+                
+                xhr.send(formData);
+            } catch (error) {
+                console.error('Error uploading file:', error);
+                showMessage('Ошибка загрузки файла', 'error');
+                hideLoading();
+            }
+        }
+        
+        function resetUploadForm() {
+            selectedFile = null;
+            document.getElementById('file-input').value = '';
+            document.getElementById('upload-filename').value = '';
+            document.getElementById('upload-btn').disabled = true;
+            document.getElementById('upload-progress').style.display = 'none';
+        }
+        
+        async function loadUploadedFiles() {
+            try {
+                const response = await fetch('/api/admin/uploads');
+                const files = await response.json();
+                
+                if (response.ok) {
+                    const tbody = document.getElementById('uploaded-files-body');
+                    tbody.innerHTML = '';
+                    
+                    files.forEach(file => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${file.name}</td>
+                            <td>${file.type}</td>
+                            <td>${(file.size / 1024).toFixed(2)} KB</td>
+                            <td><a href="${file.url}" target="_blank">${file.url}</a></td>
+                            <td>${new Date(file.uploaded_at).toLocaleString()}</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger delete-file" data-url="${file.url}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    
+                    addFileDeleteListeners();
+                }
+            } catch (error) {
+                console.error('Error loading uploaded files:', error);
+            }
+        }
+        
+        function addFileDeleteListeners() {
+            document.querySelectorAll('.delete-file').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const url = btn.dataset.url;
+                    if (confirm('Удалить этот файл?')) {
+                        await deleteFile(url);
+                    }
+                });
+            });
+        }
+        
+        async function deleteFile(url) {
+            try {
+                showLoading();
+                const response = await fetch(`/api/admin/uploads?url=${encodeURIComponent(url)}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showMessage('Файл удален');
+                    loadUploadedFiles();
+                } else {
+                    const error = await response.json();
+                    showMessage(error.error || 'Ошибка удаления', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting file:', error);
+                showMessage('Ошибка удаления', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // === СИСТЕМА ===
+        async function loadSystemInfo() {
+            try {
+                const response = await fetch('/health');
+                const health = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('db-status').textContent = health.database === 'connected' ? 'Онлайн' : 'Офлайн';
+                    document.getElementById('redis-status').textContent = health.redis === 'connected' ? 'Онлайн' : 'Офлайн';
+                    
+                    // Загружаем дополнительные системные данные
+                    await loadSystemStats();
+                    await loadSystemLogs();
+                }
+            } catch (error) {
+                console.error('Error loading system info:', error);
+            }
+        }
+        
+        async function loadSystemStats() {
+            try {
+                const response = await fetch('/api/admin/system/stats');
+                const stats = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('memory-usage').textContent = stats.memory_usage + '%';
+                    document.getElementById('uptime').textContent = stats.uptime;
+                }
+            } catch (error) {
+                console.error('Error loading system stats:', error);
+            }
+        }
+        
+        async function loadSystemLogs() {
+            try {
+                const response = await fetch('/api/admin/system/logs');
+                const logs = await response.json();
+                
+                if (response.ok) {
+                    const logTextarea = document.getElementById('system-logs');
+                    logTextarea.value = logs.join('\n');
+                    logTextarea.scrollTop = logTextarea.scrollHeight;
+                }
+            } catch (error) {
+                console.error('Error loading system logs:', error);
+            }
+        }
+        
+        function addSystemEventListeners() {
+            // Очистка кэша
+            const clearCacheBtn = document.getElementById('clear-cache-btn');
+            if (clearCacheBtn) {
+                clearCacheBtn.addEventListener('click', async () => {
+                    if (confirm('Очистить весь кэш системы?')) {
+                        await clearCache();
+                    }
+                });
+            }
+            
+            // Очистка старых кодов
+            const clearCodesBtn = document.getElementById('clear-old-codes-btn');
+            if (clearCodesBtn) {
+                clearCodesBtn.addEventListener('click', async () => {
+                    if (confirm('Удалить все просроченные коды Telegram?')) {
+                        await clearOldCodes();
+                    }
+                });
+            }
+            
+            // Сброс магазина
+            const resetShopBtn = document.getElementById('reset-shop-btn');
+            if (resetShopBtn) {
+                resetShopBtn.addEventListener('click', async () => {
+                    if (confirm('Восстановить стандартные товары магазина? Это удалит все пользовательские товары.')) {
+                        await resetShop();
+                    }
+                });
+            }
+            
+            // Обновление логов
+            const refreshLogsBtn = document.getElementById('refresh-logs-btn');
+            if (refreshLogsBtn) {
+                refreshLogsBtn.addEventListener('click', async () => {
+                    await loadSystemLogs();
+                });
+            }
+            
+            // Очистка логов
+            const clearLogsBtn = document.getElementById('clear-logs-btn');
+            if (clearLogsBtn) {
+                clearLogsBtn.addEventListener('click', async () => {
+                    if (confirm('Очистить все логи системы?')) {
+                        await clearLogs();
+                    }
+                });
+            }
+        }
+        
+        async function clearCache() {
+            try {
+                showLoading();
+                const response = await fetch('/api/admin/system/clear_cache', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    showMessage('Кэш очищен');
+                } else {
+                    showMessage(result.message || 'Ошибка очистки кэша', 'error');
+                }
+            } catch (error) {
+                console.error('Error clearing cache:', error);
+                showMessage('Ошибка очистки кэша', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function clearOldCodes() {
+            try {
+                showLoading();
+                const response = await fetch('/api/admin/system/clear_old_codes', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    showMessage(`Удалено ${result.deleted} просроченных кодов`);
+                } else {
+                    showMessage(result.message || 'Ошибка очистки кодов', 'error');
+                }
+            } catch (error) {
+                console.error('Error clearing old codes:', error);
+                showMessage('Ошибка очистки кодов', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function resetShop() {
+            try {
+                showLoading();
+                const response = await fetch('/api/admin/system/reset_shop', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    showMessage('Магазин сброшен до стандартных значений');
+                    loadShopItems();
+                } else {
+                    showMessage(result.message || 'Ошибка сброса магазина', 'error');
+                }
+            } catch (error) {
+                console.error('Error resetting shop:', error);
+                showMessage('Ошибка сброса магазина', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function clearLogs() {
+            try {
+                showLoading();
+                const response = await fetch('/api/admin/system/clear_logs', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    showMessage('Логи очищены');
+                    document.getElementById('system-logs').value = '';
+                } else {
+                    showMessage(result.message || 'Ошибка очистки логов', 'error');
+                }
+            } catch (error) {
+                console.error('Error clearing logs:', error);
+                showMessage('Ошибка очистки логов', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
+        function getRarityClass(rarity) {
+            switch(rarity.toLowerCase()) {
+                case 'common': return 'badge-info';
+                case 'rare': return 'badge-success';
+                case 'epic': return 'badge-warning';
+                case 'legendary': return 'badge-danger';
+                case 'mythic': return 'badge-danger';
+                default: return 'badge-info';
+            }
+        }
+        
+        function updatePagination(elementId, totalPages, currentPage) {
+            const pagination = document.getElementById(elementId);
+            if (!pagination) return;
+            
+            pagination.innerHTML = '';
+            
+            // Кнопка "Назад"
+            if (currentPage > 1) {
+                const prevLink = document.createElement('a');
+                prevLink.href = '#';
+                prevLink.className = 'page-link';
+                prevLink.innerHTML = '<i class="fas fa-chevron-left"></i>';
+                prevLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    loadUsers(currentPage - 1);
+                });
+                pagination.appendChild(prevLink);
+            }
+            
+            // Номера страниц
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    const pageLink = document.createElement('a');
+                    pageLink.href = '#';
+                    pageLink.className = `page-link ${i === currentPage ? 'active' : ''}`;
+                    pageLink.textContent = i;
+                    pageLink.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        if (i !== currentPage) {
+                            loadUsers(i);
+                        }
+                    });
+                    pagination.appendChild(pageLink);
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.className = 'page-link';
+                    ellipsis.textContent = '...';
+                    pagination.appendChild(ellipsis);
+                }
+            }
+            
+            // Кнопка "Вперед"
+            if (currentPage < totalPages) {
+                const nextLink = document.createElement('a');
+                nextLink.href = '#';
+                nextLink.className = 'page-link';
+                nextLink.innerHTML = '<i class="fas fa-chevron-right"></i>';
+                nextLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    loadUsers(currentPage + 1);
+                });
+                pagination.appendChild(nextLink);
+            }
+        }
+        
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
+        // === ИНИЦИАЛИЗАЦИЯ ===
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Загружаем данные для активной секции
+            await loadSectionData(currentSection);
+            
+            // Добавляем обработчики событий для всех секций
+            addUserEventListeners();
+            addShopEventListeners();
+            addBannerEventListeners();
+            addBotEventListeners();
+            addUploadEventListeners();
+            addSystemEventListeners();
+            
+            // Периодическое обновление статистики
+            setInterval(() => {
+                if (currentSection === 'stats') {
+                    loadStats();
+                } else if (currentSection === 'bot') {
+                    loadBotStatus();
+                }
+            }, 30000); // Каждые 30 секунд
+        });
+    </script>
+</body>
+</html>
